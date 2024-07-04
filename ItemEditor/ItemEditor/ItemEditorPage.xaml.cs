@@ -155,7 +155,9 @@ namespace ItemEditor
                     switch (attr)
                     {
                         case CustomDescriptionAttribute att: varMapper.VarName = att.Description;break;
-                        case DefaultStateAttribute att: varMapper.VarValue = att.DefaultState; break;
+                        case DefaultStateAttribute att:
+                            if (varMapper.VarValue == null || varMapper.VarValue is string && string.IsNullOrEmpty(varMapper.VarValue as string) || varMapper.VarValue is not string && varMapper.VarValue is not int && varMapper.VarValue == Activator.CreateInstance(varMapper.VarValue?.GetType() ?? typeof(string)))
+                                varMapper.VarValue = att.DefaultState; break;
                         case CustomSelectionAttribute att: selectionVariables = att.DefaultType; break;
                         case RequiredAttribute att: varMapper.RequiredB = true;break;
                         default:
