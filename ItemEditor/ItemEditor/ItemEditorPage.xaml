@@ -68,7 +68,7 @@
                                 <DataTemplate >
                                     <WrapPanel >
                                         <StackPanel Margin="0, 0, 0 ,20">
-                                            <TextBlock Text="{Binding VarName}" Tag="{Binding VarRealName}" FontSize="25" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding VarName}" Foreground="{Binding Required}" FontSize="25" VerticalAlignment="Center"/>
                                             <TextBox FontSize="25" Text="{Binding VarValue}" Tag="{Binding VarType}" TextWrapping="Wrap" VerticalAlignment= "Center"/>
                                             <Button Click="AddICollectionButton_Click"  Tag="{Binding VarType}" Width="100" Height="40" Content="Y aller" CommandParameter="{Binding VarRealName}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                                             <ComboBox SelectedIndex="{Binding VarValue}" ItemsSource="{Binding SelectionOptions}" Tag="{Binding VarType}" Width="100" Height="40" VerticalAlignment="Center" HorizontalAlignment="Left"/>
