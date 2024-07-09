@@ -9,10 +9,28 @@
       Title="Add An Item">
     <Page.Resources>
 
+        <Style x:Key="NewSelectionElm" TargetType="{x:Type TextBox}">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Path=SelectedIndex, ElementName=ChoiceBox}" Value="0">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <Style TargetType="{x:Type TextBox}">
             <Setter Property="Visibility" Value="Collapsed"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="{x:Null}">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="{x:Type CheckBox}">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="Boolean">
                     <Setter Property="Visibility" Value="Visible"/>
                 </DataTrigger>
             </Style.Triggers>
@@ -27,10 +45,22 @@
             </Style.Triggers>
         </Style>
 
+        <Style TargetType="{x:Type StackPanel}">
+            <Setter Property="Margin" Value="0, 0, 0 ,20"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="Importer">
+                    <Setter Property="Margin" Value="0, 0, 0 ,5"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <Style TargetType="{x:Type Button}">
             <Setter Property="Visibility" Value="Collapsed"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="Button">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Path=CommandParameter,RelativeSource={RelativeSource Self}}" Value="Importer">
                     <Setter Property="Visibility" Value="Visible"/>
                 </DataTrigger>
             </Style.Triggers>
@@ -64,14 +94,21 @@
                     <StackPanel x:Name="ControlsPanel">
                         <TextBlock x:Name="PageTitle" FontSize="30" HorizontalAlignment="Center" Margin="0,0,0,50"/>
                         <ItemsControl x:Name="ClientControl">
-                            <ItemsControl.ItemTemplate >
-                                <DataTemplate >
-                                    <WrapPanel >
-                                        <StackPanel Margin="0, 0, 0 ,20">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <WrapPanel>
+                                        <StackPanel Tag="{Binding VarType}">
                                             <TextBlock Text="{Binding VarName}" Foreground="{Binding Required}" FontSize="25" VerticalAlignment="Center"/>
                                             <TextBox FontSize="25" Text="{Binding VarValue}" Tag="{Binding VarType}" TextWrapping="Wrap" VerticalAlignment= "Center"/>
                                             <Button Click="AddICollectionButton_Click"  Tag="{Binding VarType}" Width="100" Height="40" Content="Y aller" CommandParameter="{Binding VarRealName}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                                            <ComboBox SelectedIndex="{Binding VarValue}" ItemsSource="{Binding SelectionOptions}" Tag="{Binding VarType}" Width="100" Height="40" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                            <Button Click="ImporterButton_Click" FontSize="20" Content="{Binding VarName}" CommandParameter="{Binding VarType}" Padding="2" Height="40" Tag="{Binding VarRealName}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                            <CheckBox IsChecked="{Binding VarValue}" Tag="{Binding VarType}">
+                                                <CheckBox.LayoutTransform>
+                                                    <ScaleTransform ScaleX="2" ScaleY="2" />
+                                                </CheckBox.LayoutTransform>
+                                            </CheckBox>
+                                            <ComboBox x:Name="ChoiceBox" SelectedIndex="{Binding VarValue}" ItemsSource="{Binding SelectionOptions}" Tag="{Binding VarType}" Width="100" Height="40" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                            <TextBox FontSize="25" Style="{StaticResource NewSelectionElm}" Text="{Binding VarValue}" Tag="{Binding Editable}" TextWrapping="Wrap" VerticalAlignment= "Center"/>
                                             <Separator Tag="{Binding Last}" Margin="50, 50, 50, 50" />
                                         </StackPanel>
                                         <Button Content="Retirer cette instance" Tag="{Binding RemoveButton}" Height="50" Width="400" CommandParameter="{Binding Reference}" Grid.Row="1" FontSize="25" HorizontalAlignment="Center" Padding="10, 0, 10, 0" Click="RemoveICollectionEntryButton_Click" Background="#CCE6462D"/>
