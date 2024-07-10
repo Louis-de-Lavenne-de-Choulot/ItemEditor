@@ -193,18 +193,21 @@ namespace ItemEditor
                         Dictionary<int, string>? dic;
                         if (!nestedResult.TryGetValue(fetchFunc.Method.Name, out dic))
                         {
-                            dic = (Dictionary<int, string>?)fetchFunc.Invoke("") ?? new Dictionary<int, string>();
+                            dic = (Dictionary<int, string>?)fetchFunc.Invoke(firstElm) ?? new Dictionary<int, string>();
                             nestedResult[fetchFunc.Method.Name] = dic;
                         }
                         varMapper.VarType = "Selection";
                         List<int> keys = dic.Keys.ToList();
                         List<string> values = dic.Values.ToList();
 
-                        keys.Insert(0, -1);
-                        values.Insert(0, "< Ajouter/Modifier >");
+                        if (varMapper.Editable)
+                        {
+                            keys.Insert(0, -1);
+                            values.Insert(0, "< Ajouter/Modifier >");
+                        }
 
                         int indx = values.IndexOf(varMapper.VarValue?.ToString() ?? "");
-                        if (varMapper.VarValue != null && varMapper.VarValue.ToString() != "" && indx == -1)
+                        if (varMapper.VarValue != null && varMapper.VarValue.ToString() != "" && varMapper.VarValue.ToString() != firstElm.GetType().FullName && indx == -1)
                         {
                             indx = keys.Count;
                             keys.Add(keys.Count);
