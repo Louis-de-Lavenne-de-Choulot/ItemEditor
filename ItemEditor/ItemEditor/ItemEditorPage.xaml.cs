@@ -64,6 +64,7 @@ namespace ItemEditor
     {
         private readonly ObservableCollection<VarMapper> firstElmMapper = new ObservableCollection<VarMapper>();
         private Dictionary<string, Func<object, object?>> bindingFunctions = new Dictionary<string, Func<object, object?>>();
+        private Dictionary<string, Dictionary<int, string>> nestedResult = new Dictionary<string, Dictionary<int, string>>();
         private object firstElm;
         private readonly Action? end;
         private string tempPropertyName = "";
@@ -188,7 +189,13 @@ namespace ItemEditor
                         varMapper.VarType = "Boolean";
                     else if (selectionVariables != "" && bindingFunctions.TryGetValue(selectionVariables, out var fetchFunc))
                     {
-                        Dictionary<int, string> dic = (Dictionary<int, string>?)fetchFunc.Invoke("") ?? new Dictionary<int, string>(); ;
+
+                        Dictionary<int, string>? dic;
+                        if (!nestedResult.TryGetValue(fetchFunc.Method.Name, out dic))
+                        {
+                            dic = (Dictionary<int, string>?)fetchFunc.Invoke("") ?? new Dictionary<int, string>();
+                            nestedResult[fetchFunc.Method.Name] = dic;
+                        }
                         varMapper.VarType = "Selection";
                         List<int> keys = dic.Keys.ToList();
                         List<string> values = dic.Values.ToList();
@@ -530,6 +537,15 @@ namespace ItemEditor
             }
             ClientControl.ItemsSource = new List<string>();
             ClientControl.ItemsSource = firstElmMapper;
+        }
+
+        private void ComboBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox textBox = (TextBox)sender;
+            if ((bool)textBox.Tag == false || int.TryParse(textBox.Text, out int id) && id != 0)
+                textBox.Visibility = Visibility.Collapsed;
+            else
+                textBox.Visibility = Visibility.Visible;
         }
     }
 }
