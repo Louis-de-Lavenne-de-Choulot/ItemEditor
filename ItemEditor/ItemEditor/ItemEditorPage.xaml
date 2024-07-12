@@ -81,7 +81,7 @@
             </Style.Triggers>
         </Style>
     </Page.Resources>
-    <Grid Background="#F2FFFFFF">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="80"/>
             <RowDefinition/>
@@ -104,17 +104,17 @@
                                 <DataTemplate>
                                     <WrapPanel>
                                         <StackPanel Tag="{Binding VarType}">
-                                            <TextBlock Text="{Binding VarName}" Foreground="{Binding Required}" FontSize="25" VerticalAlignment="Center"/>
-                                            <TextBox FontSize="25" Text="{Binding VarValue}" Tag="{Binding VarType}" TextWrapping="Wrap" VerticalAlignment= "Center"/>
-                                            <Button Click="AddICollectionButton_Click"  Tag="{Binding VarType}" Width="100" Height="40" Content="Y aller" CommandParameter="{Binding VarRealName}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                                            <Button Click="ImporterButton_Click" FontSize="20" Content="{Binding VarName}" CommandParameter="{Binding VarType}" Padding="2" Height="40" Tag="{Binding VarRealName}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                            <TextBlock VerticalAlignment="Center" MinWidth="200" Text="{Binding VarName}"   Tag="{Binding Required}" FontSize="25"/>
+                                            <TextBox   VerticalAlignment="Center" MinWidth="200" Text="{Binding VarValue}"  Tag="{Binding VarType}"  FontSize="25" TextWrapping="Wrap"/>
+                                            <Button    VerticalAlignment="Center" MinWidth="200" HorizontalAlignment="Left" Tag="{Binding VarType}"     Height="40" Click="AddICollectionButton_Click" Content="Y aller" CommandParameter="{Binding VarRealName}"/>
+                                            <Button    VerticalAlignment="Center" MinWidth="200" HorizontalAlignment="Left" Tag="{Binding VarRealName}" Height="40" Click="ImporterButton_Click" FontSize="20" Content="{Binding VarName}" CommandParameter="{Binding VarType}" Padding="2"/>
+                                            <ComboBox  VerticalAlignment="Center" MinWidth="200" HorizontalAlignment="Left" Tag="{Binding VarType}"     Height="40" x:Name="ChoiceBox" SelectedIndex="{Binding VarValue}" ItemsSource="{Binding SelectionOptions}"/>
+                                            <TextBox   VerticalAlignment="Center" MinWidth="200" Text="{Binding VarValue}"  Tag="{Binding Editable}" FontSize="25" Style="{StaticResource NewSelectionElm}" TextChanged="ComboBox_TextChanged" TextWrapping="Wrap"/>
                                             <CheckBox IsChecked="{Binding VarValue}" Tag="{Binding VarType}">
                                                 <CheckBox.LayoutTransform>
                                                     <ScaleTransform ScaleX="2" ScaleY="2" />
                                                 </CheckBox.LayoutTransform>
                                             </CheckBox>
-                                            <ComboBox x:Name="ChoiceBox" SelectedIndex="{Binding VarValue}" ItemsSource="{Binding SelectionOptions}" Tag="{Binding VarType}" Width="100" Height="40" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                                            <TextBox FontSize="25" Style="{StaticResource NewSelectionElm}" Text="{Binding VarValue}" Tag="{Binding Editable}" TextChanged="ComboBox_TextChanged" TextWrapping="Wrap" VerticalAlignment= "Center"/>
                                             <Separator Tag="{Binding Last}" Margin="50, 50, 50, 50" />
                                         </StackPanel>
                                         <Button Content="Retirer cette instance" Tag="{Binding RemoveButton}" Height="50" Width="400" CommandParameter="{Binding Reference}" Grid.Row="1" FontSize="25" HorizontalAlignment="Center" Padding="10, 0, 10, 0" Click="RemoveICollectionEntryButton_Click" Background="#CCE6462D"/>

@@ -207,7 +207,7 @@ namespace ItemEditor
                         }
 
                         int indx = values.IndexOf(varMapper.VarValue?.ToString() ?? "");
-                        if (varMapper.VarValue != null && varMapper.VarValue.ToString() != "" && varMapper.VarValue.ToString() != firstElm.GetType().FullName && indx == -1)
+                        if (varMapper.VarValue != null && varMapper.VarValue.ToString() != "" && varMapper.VarValue.GetType() == typeof(string) && indx == -1)
                         {
                             indx = keys.Count;
                             keys.Add(keys.Count);
