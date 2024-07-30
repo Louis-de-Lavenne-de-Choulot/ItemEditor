@@ -22,7 +22,7 @@ namespace ItemEditor
         public object? VarType { get; set; }
         public int Reference { get; set; }
         public string RemoveButton { get; set; }
-        public ICollection<int> selectionIndexes { get; set; }
+        public ICollection<long> selectionIndexes { get; set; }
         public ICollection<string> SelectionOptions { get; set; }
         public bool Editable { get; set; } = false;
         public string? Required { get; set; }
@@ -53,7 +53,7 @@ namespace ItemEditor
             RequiredB = false;
             Reference = 0;
             RemoveButton = string.Empty;
-            selectionIndexes = new List<int>();
+            selectionIndexes = new List<long>();
             SelectionOptions = new List<string>();
         }
     }
@@ -64,7 +64,7 @@ namespace ItemEditor
     {
         private readonly ObservableCollection<VarMapper> firstElmMapper = new ObservableCollection<VarMapper>();
         private Dictionary<string, Func<object, object?>> bindingFunctions = new Dictionary<string, Func<object, object?>>();
-        private Dictionary<string, Dictionary<int, string>> nestedResult = new Dictionary<string, Dictionary<int, string>>();
+        private Dictionary<string, Dictionary<long, string>> nestedResult = new Dictionary<string, Dictionary<long, string>>();
         private object firstElm;
         private readonly Action? end;
         private string tempPropertyName = "";
@@ -148,7 +148,7 @@ namespace ItemEditor
                 varMapper.VarRealName = prop.Name;
                 varMapper.VarValue = prop.GetValue(obj) ?? "";
                 varMapper.ID = firstElmMapper.Count;
-
+                long selectionDefault = 0;
                 string selectionVariables = "";
                 object[] attrs = prop.GetCustomAttributes(true);
                 foreach (object attr in attrs)
@@ -157,11 +157,17 @@ namespace ItemEditor
                     {
                         case CustomDescriptionAttribute att: varMapper.VarName = att.Description; break;
                         case DefaultStateAttribute att:
+                            Type def = att.DefaultState.GetType();
                             if (varMapper.VarValue == null || 
                                 varMapper.VarValue is string && string.IsNullOrEmpty(varMapper.VarValue as string) || 
                                 varMapper.VarValue is not string && varMapper.VarValue is not int && 
                                 varMapper.VarValue == Activator.CreateInstance(varMapper.VarValue?.GetType() ?? typeof(string)))
-                                varMapper.VarValue = att.DefaultState; 
+                                varMapper.VarValue = att.DefaultState;
+                            try
+                            {
+                                selectionDefault = Convert.ToInt64(att.DefaultState);
+                            }
+                            catch { }
                             break;
                         case CustomSelectionAttribute att: selectionVariables = att.DefaultType; break;
                         case EditableAttribute att: varMapper.Editable = att.AllowEdit; break;
@@ -187,17 +193,17 @@ namespace ItemEditor
                 {
                     if (prop.PropertyType == typeof(bool))
                         varMapper.VarType = "Boolean";
-                    else if (selectionVariables != "" && bindingFunctions.TryGetValue(selectionVariables, out var fetchFunc))
+                    else if (selectionVariables != "" && bindingFunctions.TryGetValue(selectionVariables, out Func<object, object?>? fetchFunc))
                     {
 
-                        Dictionary<int, string>? dic;
+                        Dictionary<long, string>? dic;
                         if (!nestedResult.TryGetValue(fetchFunc.Method.Name, out dic))
                         {
-                            dic = (Dictionary<int, string>?)fetchFunc.Invoke(firstElm) ?? new Dictionary<int, string>();
+                            dic = (Dictionary<long, string>?)fetchFunc.Invoke(firstElm) ?? new Dictionary<long, string>();
                             nestedResult[fetchFunc.Method.Name] = dic;
                         }
                         varMapper.VarType = "Selection";
-                        List<int> keys = dic.Keys.ToList();
+                        List<long> keys = dic.Keys.ToList();
                         List<string> values = dic.Values.ToList();
 
                         if (varMapper.Editable)
@@ -206,14 +212,14 @@ namespace ItemEditor
                             values.Insert(0, "< Ajouter/Modifier >");
                         }
 
-                        int indx = values.IndexOf(varMapper.VarValue?.ToString() ?? "");
-                        if (varMapper.VarValue != null && varMapper.VarValue.ToString() != "" && varMapper.VarValue.GetType() == typeof(string) && indx == -1)
+                        long indx = values.IndexOf(varMapper.VarValue?.ToString() ?? "");
+                        if (varMapper.VarValue != null && varMapper.VarValue.GetType() == typeof(string) && varMapper.VarValue.ToString() != "" && indx == -1)
                         {
                             indx = keys.Count;
                             keys.Add(keys.Count);
                             values.Add(varMapper.VarValue.ToString()??"");
                         }
-                        varMapper.VarValue = indx == -1?0: indx;
+                        varMapper.VarValue = indx == -1? selectionDefault.ToString() : indx.ToString();
 
                         varMapper.selectionIndexes = keys;
                         varMapper.SelectionOptions = values;
@@ -288,10 +294,25 @@ namespace ItemEditor
                             if (mapper.VarType?.ToString() == "Selection")
                             {
                                 object? obj1 = Activator.CreateInstance(property.PropertyType);
-                                if (mapper.VarValue is int)
-                                    obj1?.GetType().GetProperty("ID")?.SetValue(obj1, mapper.selectionIndexes.ElementAt((int)mapper.VarValue));
+                                if (mapper.VarValue is long)
+                                {
+                                    obj1?.GetType().GetProperties()?.FirstOrDefault(
+                                        prop =>
+                                            prop.GetCustomAttributes(true).FirstOrDefault(x => x.GetType() == typeof(KeyAttribute)) != null
+                                        )?.SetValue(obj1, mapper.selectionIndexes.ElementAt((Index)(long)mapper.VarValue));
+                                }
+                                else if (mapper.VarValue is int)
+                                {
+                                    obj1?.GetType().GetProperties()?.FirstOrDefault(
+                                        prop =>
+                                            prop.GetCustomAttributes(true).FirstOrDefault(x => x.GetType() == typeof(KeyAttribute)) != null
+                                        )?.SetValue(obj1, mapper.selectionIndexes.ElementAt((Index)(int)mapper.VarValue));
+                                }
+                                else if (mapper.VarValue is string && obj1?.GetType() == typeof(string))
+                                    obj1 = mapper.VarValue;
                                 else if (mapper.VarValue is string)
-                                    obj1?.GetType().GetProperties().ToList().ForEach(p => {
+                                    obj1?.GetType().GetProperties().ToList().ForEach(p =>
+                                    {
                                         if (p.PropertyType == typeof(string))
                                             p.SetValue(obj1, mapper.VarValue);
                                     });
@@ -301,8 +322,10 @@ namespace ItemEditor
                         }
                         if (mapper.VarType?.ToString() == "Selection")
                         {
-                            if (mapper.VarValue is int)
-                                property.SetValue(ICollectionObjs?[countCopy], Convert.ChangeType(mapper.SelectionOptions.ElementAt((int?)mapper.VarValue ?? 0), property.PropertyType));
+                            if (mapper.VarValue is long)
+                                property.SetValue(ICollectionObjs?[countCopy], Convert.ChangeType(mapper.SelectionOptions.ElementAt((Index)(long)mapper.VarValue), property.PropertyType));
+                            else if (mapper.VarValue is int)
+                                property.SetValue(ICollectionObjs?[countCopy], Convert.ChangeType(mapper.SelectionOptions.ElementAt((Index)(int)mapper.VarValue), property.PropertyType));
                             else if (mapper.VarValue is string)
                                 property.SetValue(ICollectionObjs?[countCopy], mapper.VarValue);
                             continue;
@@ -354,8 +377,20 @@ namespace ItemEditor
                             if (mapper.VarType?.ToString() == "Selection") { 
                                 object? obj1 = Activator.CreateInstance(property.PropertyType);
 
-                                if (mapper.VarValue is int)
-                                    obj1?.GetType().GetProperty("ID")?.SetValue(obj1, mapper.selectionIndexes.ElementAt((int)mapper.VarValue));
+                                if (mapper.VarValue is long)
+                                {
+                                    obj1?.GetType().GetProperties()?.FirstOrDefault(
+                                        prop =>
+                                            prop.GetCustomAttributes(true).FirstOrDefault(x => x.GetType() == typeof(KeyAttribute)) != null
+                                        )?.SetValue(obj1, mapper.selectionIndexes.ElementAt((Index)(long)mapper.VarValue));
+                                }
+                                else if( mapper.VarValue is int)
+                                {
+                                    obj1?.GetType().GetProperties()?.FirstOrDefault(
+                                        prop =>
+                                            prop.GetCustomAttributes(true).FirstOrDefault(x=> x.GetType() == typeof(KeyAttribute)) != null
+                                        )?.SetValue(obj1, mapper.selectionIndexes.ElementAt((Index)(int)mapper.VarValue));
+                                }
                                 else if (mapper.VarValue is string)
                                     obj1?.GetType().GetProperties().ToList().ForEach(p => {
                                         if (p.PropertyType == typeof(string))
@@ -367,8 +402,10 @@ namespace ItemEditor
                         }
                         if (mapper.VarType?.ToString() == "Selection")
                         {
-                            if (mapper.VarValue is int)
-                                property.SetValue(firstElm, Convert.ChangeType(mapper.SelectionOptions.ElementAt((int?)mapper.VarValue ?? 0), property.PropertyType));
+                            if (mapper.VarValue is long)
+                                property.SetValue(firstElm, Convert.ChangeType(mapper.SelectionOptions.ElementAt((Index)(long)mapper.VarValue), property.PropertyType));
+                            else if (mapper.VarValue is int)
+                                property.SetValue(firstElm, Convert.ChangeType(mapper.SelectionOptions.ElementAt((Index)(int)mapper.VarValue), property.PropertyType));
                             else if (mapper.VarValue is string)
                                 property.SetValue(firstElm, mapper.VarValue);
                             continue;
