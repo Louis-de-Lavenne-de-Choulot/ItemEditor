@@ -69,6 +69,12 @@
                 <DataTrigger Binding="{Binding Path=CommandParameter,RelativeSource={RelativeSource Self}}" Value="Importer">
                     <Setter Property="Visibility" Value="Visible"/>
                 </DataTrigger>
+                <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="FileSelection">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="FolderSelection">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
             </Style.Triggers>
         </Style>
 
@@ -106,7 +112,7 @@
                                         <StackPanel Tag="{Binding VarType}">
                                             <TextBlock VerticalAlignment="Center" MinWidth="200" Text="{Binding VarName}"   Tag="{Binding Required}" FontSize="25"/>
                                             <TextBox   VerticalAlignment="Center" MinWidth="200" Text="{Binding VarValue}"  Tag="{Binding VarType}"  FontSize="25" TextWrapping="Wrap"/>
-                                            <Button    VerticalAlignment="Center" MinWidth="200" HorizontalAlignment="Left" Tag="{Binding VarType}"     Height="40" Click="AddICollectionButton_Click" Content="Y aller" CommandParameter="{Binding VarRealName}"/>
+                                            <Button    VerticalAlignment="Center" MinWidth="200" HorizontalAlignment="Left" Tag="{Binding VarType}"     Height="40" Click="CallFuncButton_Click" Content="Y aller" CommandParameter="{Binding VarRealName}"  ToolTip="{Binding ID}"/>
                                             <Button    VerticalAlignment="Center" MinWidth="200" HorizontalAlignment="Left" Tag="{Binding VarRealName}" Height="40" Click="ImporterButton_Click" FontSize="20" Content="{Binding VarName}" CommandParameter="{Binding VarType}" Padding="2"/>
                                             <ComboBox  VerticalAlignment="Center" MinWidth="200" HorizontalAlignment="Left" Tag="{Binding VarType}"     Height="40" x:Name="ChoiceBox" SelectedIndex="{Binding VarValue}" ItemsSource="{Binding SelectionOptions}"/>
                                             <TextBox   VerticalAlignment="Center" MinWidth="200" Text="{Binding VarValue}"  Tag="{Binding Editable}" FontSize="25" Style="{StaticResource NewSelectionElm}" TextChanged="ComboBox_TextChanged" TextWrapping="Wrap"/>

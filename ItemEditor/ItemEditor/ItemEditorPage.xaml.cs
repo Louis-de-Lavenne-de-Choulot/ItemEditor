@@ -9,12 +9,15 @@ using System.Windows.Controls;
 using CustomItemEditorAttributes;
 using System.ComponentModel.DataAnnotations;
 using System.Windows.Documents;
+using Microsoft.VisualBasic;
+using System.ComponentModel;
+using System.IO;
 
 namespace ItemEditor
 {
     public class VarMapper
     {
-        public int ID { get; set; } = 0;
+        public int ID { get; set; }
         private string? _name { get; set; }
         public string? VarName { get { return RequiredB ? (_name ?? "") + " *" : _name; } set { _name = value ?? ""; } }
         public object? VarValue { get; set; }
@@ -25,6 +28,7 @@ namespace ItemEditor
         public ICollection<long> selectionIndexes { get; set; }
         public ICollection<string> SelectionOptions { get; set; }
         public bool Editable { get; set; } = false;
+        public Action<object, RoutedEventArgs> EditFunc { get; set; }
         public string? Required { get; set; }
         private bool _required { get; set; }
         public bool RequiredB
@@ -171,6 +175,8 @@ namespace ItemEditor
                             break;
                         case CustomSelectionAttribute att: selectionVariables = att.DefaultType; break;
                         case EditableAttribute att: varMapper.Editable = att.AllowEdit; break;
+                        case BrowsableAttribute: varMapper.VarType = "FolderSelection";break;
+                        case FileExtensionsAttribute: varMapper.VarType = "FileSelection"; break;
                         case RequiredAttribute att: varMapper.RequiredB = true; break;
                         case CustomImporterAttribute att: 
                             firstElmMapper.Add(new VarMapper { 
@@ -217,20 +223,28 @@ namespace ItemEditor
                         {
                             indx = keys.Count;
                             keys.Add(keys.Count);
-                            values.Add(varMapper.VarValue.ToString()??"");
+                            values.Add(varMapper.VarValue.ToString() ?? "");
                         }
-                        varMapper.VarValue = indx == -1? selectionDefault.ToString() : indx.ToString();
+                        varMapper.VarValue = indx == -1 ? selectionDefault.ToString() : indx.ToString();
 
                         varMapper.selectionIndexes = keys;
                         varMapper.SelectionOptions = values;
                     }
+                    else if (varMapper.VarType?.ToString() == "FolderSelection")
+                        varMapper.EditFunc = FolderSelectButton_Click;
+                    else if (varMapper.VarType?.ToString() == "FileSelection")
+                        varMapper.EditFunc = FileSelectButton_Click;
                     else if (!namespaceStr.StartsWith("System") || prop.PropertyType.IsGenericType && (tp == typeof(ICollection<>) || tp == typeof(IList<>) || tp == typeof(List<>)))
+                    {
                         varMapper.VarType = "Button";
+                        varMapper.EditFunc = AddICollectionButton_Click;
+                    }
                     firstElmMapper.Add(varMapper);
                     countVarMappersPerInstance++;
                 }
             }
-            firstElmMapper[firstElmMapper.Count - 1].LastB = true;
+            if (firstElmMapper.Count > 0)   
+                firstElmMapper[firstElmMapper.Count - 1].LastB = true;
         }
 
         private void BindItemsControl()
@@ -485,6 +499,57 @@ namespace ItemEditor
             }
         }
 
+        private void FolderSelectButton_Click(object sender, RoutedEventArgs e)
+        {
+            Button btn = (Button)sender;
+            int tag = int.Parse(btn.ToolTip?.ToString() ?? "0");
+
+            foreach (VarMapper x in firstElmMapper)
+            {
+                if (x.ID == tag)
+                {
+                    Microsoft.Win32.OpenFolderDialog dlg = new Microsoft.Win32.OpenFolderDialog();
+                    if (dlg.ShowDialog() == true)
+                    {
+                        x.VarValue = dlg.FolderName;
+                    }
+                }
+            }
+        }
+
+        private void FileSelectButton_Click(object sender, RoutedEventArgs e)
+        {
+            Button btn = (Button)sender;
+            int tag = int.Parse(btn.ToolTip?.ToString() ?? "0");
+
+            foreach (VarMapper x in firstElmMapper)
+            {
+                if (x.ID == tag)
+                {
+                    Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+                    dlg.Filter = "All (*.*)|*.*";
+                    if (dlg.ShowDialog() == true)
+                    {
+                        x.VarValue = dlg.FileName;
+                    }
+                }
+            }
+        }
+
+        private void CallFuncButton_Click(object sender, RoutedEventArgs e)
+        {
+            Button btn = (Button)sender;
+
+            int tag = int.Parse(btn.ToolTip?.ToString() ?? throw new Exception("This is mandatory, you cannot skip this exception CallFuncButton_Click"));
+
+            foreach (VarMapper x in firstElmMapper)
+            {
+                if (x.ID == tag)
+                {
+                    x.EditFunc.Invoke(sender, e);
+                }
+            }
+        }
         private void AddICollectionEntryButton_Click(object sender, RoutedEventArgs e)
         {
             // Get the inner object type
