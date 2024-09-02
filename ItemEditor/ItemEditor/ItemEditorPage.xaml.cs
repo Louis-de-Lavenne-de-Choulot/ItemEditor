@@ -25,7 +25,7 @@ namespace ItemEditor
         public ICollection<object> selectionIndexes { get; set; }
         public ICollection<string> SelectionOptions { get; set; }
         public bool Editable { get; set; } = false;
-        public Action<object, RoutedEventArgs> EditFunc { get; set; }
+        public Action<object, RoutedEventArgs>? EditFunc { get; set; }
         public string? Required { get; set; }
         private bool _required { get; set; }
         public bool RequiredB
@@ -71,13 +71,13 @@ namespace ItemEditor
         {
             {typeof(string), s => {return (s, true); } },
             {typeof(decimal), s => {
-                s = s.ToString().Replace(".", ",") ?? "";
+                s = s?.ToString()?.Replace(".", ",") ?? "";
                 return decimal.TryParse(s.ToString(), out _) ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
             {typeof(double), s => {
-                s = s.ToString().Replace(".", ",") ?? "";
+                s = s?.ToString()?.Replace(".", ",") ?? "";
                 return double.TryParse(s.ToString(), out _) ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
             {typeof(float), s => {
-                s = s.ToString().Replace(".", ",") ?? "";
+                s = s?.ToString()?.Replace(".", ",") ?? "";
                 return float.TryParse(s.ToString(), out _) ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
             {typeof(int), s => {return (s, int.TryParse(s.ToString(), out _)); } },
             {typeof(long), s => {return (s, long.TryParse(s.ToString(), out _)); } }
@@ -221,7 +221,7 @@ namespace ItemEditor
                     else if (selectionVariables != "" && bindingFunctions.TryGetValue(selectionVariables, out Func<object, object?>? fetchFunc))
                     {
                         object resultObj = "";
-                        Dictionary<object, string> dic = [];
+                        Dictionary<object, string>? dic = [];
                         if (!nestedResult.TryGetValue(fetchFunc.Method.Name, out dic))
                         {
                             dic = [];
@@ -230,12 +230,12 @@ namespace ItemEditor
 
                             for (int i = 0; i < tempList.Count; i++)
                             {
-                                if (dic.ContainsKey(tempList[i]))
+                                if (dic.ContainsKey(tempList[i]??""))
                                 {
                                     continue;
                                 }
 
-                                dic.Add(tempList[i], tempList[i]?.ToString() ?? "ERR NO TEXT");
+                                dic.Add(tempList[i]??"", tempList[i]?.ToString() ?? "ERR NO TEXT");
                             }
 
                             nestedResult[fetchFunc.Method.Name] = dic;
@@ -407,11 +407,10 @@ namespace ItemEditor
                             else if (resultingInt >= 0)
                             {
                                 bool isAnInt2 = int.TryParse(mapper.selectionIndexes.ElementAt((Index?)resultingInt ?? 0).ToString(), out int resultingInt2);
-                                if ((isAnInt2 && resultingInt2 != -2) || !isAnInt2)
-                                {
-                                    ICollectionObjs[countCopy] = mapper.selectionIndexes.ElementAt((Index?)resultingInt ?? 0);
-                                }
-                            }
+                                if (((isAnInt2 && resultingInt2 != -2) || !isAnInt2) && ICollectionObjs != null)
+                                        ICollectionObjs[countCopy] = mapper.selectionIndexes.ElementAt((Index?)resultingInt ?? 0);
+                            
+                        }
                             else if (resultingInt == -1)
                             {
                                 ICollectionObjs?[countCopy]?.GetType()?.GetProperties().ToList().ForEach(x =>
@@ -429,7 +428,7 @@ namespace ItemEditor
 
                         if (TypeValidator.ContainsKey(property.PropertyType))
                         {
-                            (object, bool) resultingVal = TypeValidator[property.PropertyType](mapper.VarValue);
+                            (object, bool) resultingVal = TypeValidator[property.PropertyType](mapper.VarValue ?? "");
                             if (!resultingVal.Item2)
                             {
                                 invalidPerIter++;
@@ -572,7 +571,7 @@ namespace ItemEditor
 
                         if (TypeValidator.ContainsKey(property.PropertyType))
                         {
-                            (object, bool) resultingVal = TypeValidator[property.PropertyType](mapper.VarValue);
+                            (object, bool) resultingVal = TypeValidator[property.PropertyType](mapper.VarValue ?? "");
                             if (!resultingVal.Item2)
                             {
                                 mapper.Required = "#FFE41212";
@@ -625,7 +624,7 @@ namespace ItemEditor
                     instanceDic["saveFunction"] = MergeICollectionEntry;
 
                     NavigationService.Content = bindingFunctions.TryGetValue(prop.Name + "_interceptor", out Func<object, object?>? func)
-                        ? new ItemEditorPage(func.Invoke(prop.GetValue(firstElm)) ?? "", instanceDic, prop.Name, null)
+                        ? new ItemEditorPage(func.Invoke(prop.GetValue(firstElm) ?? "") ?? "", instanceDic, prop.Name, null)
                         : (object)new ItemEditorPage(prop.GetValue(firstElm) ?? Activator.CreateInstance(propType) ?? "", instanceDic, prop.Name, null);
                 }
             }
@@ -717,7 +716,7 @@ namespace ItemEditor
             {
                 if (x.ID == tag)
                 {
-                    x.EditFunc.Invoke(sender, e);
+                    x.EditFunc?.Invoke(sender, e);
                 }
             }
         }
@@ -755,7 +754,7 @@ namespace ItemEditor
                     propI?.SetValue(firstElm, res);
                     foreach (VarMapper item in firstElmMapper)
                     {
-                        if (item?.VarRealName == tempPropertyName)
+                        if (item?.VarRealName?.ToString() == tempPropertyName)
                         {
                             item.VarValue = res;
                         }
@@ -771,7 +770,7 @@ namespace ItemEditor
                 prop?.SetValue(firstElm, obj);
                 foreach (VarMapper item in firstElmMapper)
                 {
-                    if (item?.VarRealName == tempPropertyName)
+                    if (item?.VarRealName?.ToString() == tempPropertyName)
                     {
                         item.VarValue = obj;
                     }
@@ -782,7 +781,7 @@ namespace ItemEditor
                 prop?.SetValue(firstElm, Convert.ChangeType(obj, prop.PropertyType));
                 foreach (VarMapper item in firstElmMapper)
                 {
-                    if (item?.VarRealName == tempPropertyName)
+                    if (item?.VarRealName?.ToString() == tempPropertyName)
                     {
                         item.VarValue = obj;
                     }
