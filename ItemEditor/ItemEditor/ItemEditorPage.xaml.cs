@@ -14,6 +14,8 @@ using System.ComponentModel;
 using System.IO;
 using System.Globalization;
 using System.Windows.Data;
+using System.Numerics;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ItemEditor
 {
@@ -75,7 +77,30 @@ namespace ItemEditor
         private readonly Action? end;
         private string tempPropertyName = "";
         int countVarMappersPerInstance = 0;
-
+        private Dictionary<Type, Func<object, (object, bool)>> TypeValidator = new Dictionary<Type, Func<object, (object, bool)>>()
+        {
+            {typeof(string), s => {return (s, true); } },
+            {typeof(decimal), s => {
+                s = s.ToString().Replace(".", ",") ?? "";
+                if(decimal.TryParse(s.ToString(), out _))
+                    return (s, true);
+                return (s, false);
+            } },
+            {typeof(double), s => {
+                s = s.ToString().Replace(".", ",") ?? "";
+                if(double.TryParse(s.ToString(), out _))
+                    return (s, true);
+                return (s, false);
+            } },
+            {typeof(float), s => {
+                s = s.ToString().Replace(".", ",") ?? "";
+                if(float.TryParse(s.ToString(), out _))
+                    return (s, true);
+                return (s, false);
+            } },
+            {typeof(int), s => {return (s, int.TryParse(s.ToString(), out _)); } },
+            {typeof(long), s => {return (s, long.TryParse(s.ToString(), out _)); } }
+        };
         public ItemEditorPage(object firstElm, Dictionary<string, Func<object, object?>> bindingFunctions, string pageTitle = "", Action? end = null)
         {
             InitializeComponent();
@@ -206,14 +231,16 @@ namespace ItemEditor
                     {
                         object resultObj = "";
                         Dictionary<object, string> dic = new Dictionary<object, string>();
-                        if (!nestedResult.TryGetValue(fetchFunc.Method.Name, out dic)) // Il se passe quoi a dic si cette func return false sale retard ????
+                        if (!nestedResult.TryGetValue(fetchFunc.Method.Name, out dic))
                         { 
                             dic = new Dictionary<object, string>();
-                            resultObj = fetchFunc.Invoke(firstElm) ?? new List<string>();//(Dictionary<long, string>?) ?? new Dictionary<long, string>();
+                            resultObj = fetchFunc.Invoke(firstElm) ?? new List<string>();
                             IList tempList = (IList)resultObj;
 
                             for (int i = 0; i < tempList.Count; i++)
                             {
+                                if (dic.ContainsKey(tempList[i]))
+                                    continue;
                                 dic.Add(tempList[i], tempList[i]?.ToString() ?? "ERR NO TEXT");
                             }
 
@@ -313,7 +340,7 @@ namespace ItemEditor
                         count++;
                         countIter = 0;
                     }
-
+                    mapper.Required = "#FF000000";
                     if (mapper == null || mapper.VarType?.ToString() == "Importer")
                         continue;
 
@@ -387,9 +414,20 @@ namespace ItemEditor
                             }
                             continue;
                         }
-                        if (property.PropertyType == typeof(decimal))
-                            mapper.VarValue = mapper.VarValue?.ToString()?.Replace(".", ",") ?? "";
-                        property.SetValue(ICollectionObjs?[countCopy], Convert.ChangeType(mapper?.VarValue, property.PropertyType));
+
+                        if (TypeValidator.ContainsKey(property.PropertyType))
+                        {
+                            (object, bool) resultingVal = TypeValidator[property.PropertyType](mapper.VarValue);
+                            if (!resultingVal.Item2)
+                            {
+                                invalidPerIter++;
+                                mapper.Required = "#FFE41212";
+                                validIteration = false;
+                            }
+                            else
+                                property.SetValue(ICollectionObjs?[countCopy], Convert.ChangeType(resultingVal.Item1, property.PropertyType));
+                        }
+
                     }
                 }
                 // Get the inner object type
@@ -414,6 +452,8 @@ namespace ItemEditor
                 {
                     if (mapper.VarType?.ToString() == "Importer")
                         continue;
+
+                    mapper.Required = "#FF000000";
                     var property = firstElm?.GetType().GetProperty(mapper.VarRealName?.ToString() ?? "");
                     if (mapper.VarValue == null || mapper.VarValue is string && string.IsNullOrEmpty(mapper.VarValue as string) || mapper.VarValue is not string && mapper.VarValue is not int && mapper.VarValue == Activator.CreateInstance(mapper.VarValue?.GetType() ?? typeof(string)))
                     {
@@ -494,9 +534,18 @@ namespace ItemEditor
                             }
                             continue;
                         }
-                        if (property.PropertyType == typeof(decimal))
-                            mapper.VarValue = mapper.VarValue?.ToString()?.Replace(".", ",") ?? "";
-                        property.SetValue(firstElm, Convert.ChangeType(mapper.VarValue, property.PropertyType));
+
+                        if (TypeValidator.ContainsKey(property.PropertyType))
+                        {
+                            (object, bool) resultingVal = TypeValidator[property.PropertyType](mapper.VarValue);
+                            if (!resultingVal.Item2)
+                            {
+                                mapper.Required = "#FFE41212";
+                                validIteration = false;
+                            }
+                            else
+                                property.SetValue(firstElm, Convert.ChangeType(resultingVal.Item1, property.PropertyType));
+                        }
                     }
                 }
 
