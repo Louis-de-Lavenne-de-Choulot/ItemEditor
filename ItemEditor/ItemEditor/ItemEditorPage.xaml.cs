@@ -1,21 +1,14 @@
-﻿using System;
+﻿using CustomItemEditorAttributes;
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using CustomItemEditorAttributes;
-using System.ComponentModel.DataAnnotations;
-using System.Windows.Documents;
-using Microsoft.VisualBasic;
-using System.ComponentModel;
-using System.IO;
-using System.Globalization;
 using System.Windows.Data;
-using System.Numerics;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Windows.Documents;
 
 namespace ItemEditor
 {
@@ -23,7 +16,7 @@ namespace ItemEditor
     {
         public int ID { get; set; }
         private string? _name { get; set; }
-        public string? VarName { get { return RequiredB ? (_name ?? "") + " *" : _name; } set { _name = value ?? ""; } }
+        public string? VarName { get => RequiredB ? (_name ?? "") + " *" : _name; set => _name = value ?? ""; }
         public object? VarValue { get; set; }
         public object? VarRealName { get; set; }
         public object? VarType { get; set; }
@@ -37,7 +30,7 @@ namespace ItemEditor
         private bool _required { get; set; }
         public bool RequiredB
         {
-            get { return _required; }
+            get => _required;
             set
             {
                 Required = "#FF000000";
@@ -47,11 +40,8 @@ namespace ItemEditor
         public string Last { get; set; } = "";
         public bool LastB
         {
-            get { return Last != "" ? true : false; }
-            set
-            {
-                Last = value ? "Y" : "";
-            }
+            get => Last != "";
+            set => Last = value ? "Y" : "";
         }
         public Visibility DropdownVisibility { get; set; } = Visibility.Collapsed;
         public VarMapper()
@@ -60,8 +50,8 @@ namespace ItemEditor
             RequiredB = false;
             Reference = 0;
             RemoveButton = string.Empty;
-            selectionIndexes = new List<object>();
-            SelectionOptions = new List<string>();
+            selectionIndexes = [];
+            SelectionOptions = [];
         }
     }
 
@@ -70,34 +60,25 @@ namespace ItemEditor
     /// </summary>
     public partial class ItemEditorPage : Page
     {
-        private readonly ObservableCollection<VarMapper> firstElmMapper = new ObservableCollection<VarMapper>();
-        private Dictionary<string, Func<object, object?>> bindingFunctions = new Dictionary<string, Func<object, object?>>();
-        private Dictionary<string, Dictionary<object, string>> nestedResult = new Dictionary<string, Dictionary<object, string>>();
+        private readonly ObservableCollection<VarMapper> firstElmMapper = [];
+        private readonly Dictionary<string, Func<object, object?>> bindingFunctions = [];
+        private readonly Dictionary<string, Dictionary<object, string>> nestedResult = [];
         private object firstElm;
         private readonly Action? end;
         private string tempPropertyName = "";
-        int countVarMappersPerInstance = 0;
-        private Dictionary<Type, Func<object, (object, bool)>> TypeValidator = new Dictionary<Type, Func<object, (object, bool)>>()
+        private int countVarMappersPerInstance = 0;
+        private readonly Dictionary<Type, Func<object, (object, bool)>> TypeValidator = new()
         {
             {typeof(string), s => {return (s, true); } },
             {typeof(decimal), s => {
                 s = s.ToString().Replace(".", ",") ?? "";
-                if(decimal.TryParse(s.ToString(), out _))
-                    return (s, true);
-                return (s, false);
-            } },
+                return decimal.TryParse(s.ToString(), out _) ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
             {typeof(double), s => {
                 s = s.ToString().Replace(".", ",") ?? "";
-                if(double.TryParse(s.ToString(), out _))
-                    return (s, true);
-                return (s, false);
-            } },
+                return double.TryParse(s.ToString(), out _) ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
             {typeof(float), s => {
                 s = s.ToString().Replace(".", ",") ?? "";
-                if(float.TryParse(s.ToString(), out _))
-                    return (s, true);
-                return (s, false);
-            } },
+                return float.TryParse(s.ToString(), out _) ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
             {typeof(int), s => {return (s, int.TryParse(s.ToString(), out _)); } },
             {typeof(long), s => {return (s, long.TryParse(s.ToString(), out _)); } }
         };
@@ -119,13 +100,16 @@ namespace ItemEditor
                 PopulateMappersICollection();
             }
             else
+            {
                 PopulateMappersClass();
+            }
 
             foreach (object attr in attrs)
             {
-                CustomDescriptionAttribute? descriptionAttribute = attr as CustomDescriptionAttribute;
-                if (descriptionAttribute != null)
+                if (attr is CustomDescriptionAttribute descriptionAttribute)
+                {
                     PageTitle.Text = descriptionAttribute.Description;
+                }
             }
             BindItemsControl();
         }
@@ -143,7 +127,7 @@ namespace ItemEditor
                 try
                 {
                     object? instance = Activator.CreateInstance(innerType);
-                    ICollectionObjs.Add(instance ?? throw new Exception());
+                    _ = ICollectionObjs.Add(instance ?? throw new Exception());
                     firstElm = ICollectionObjs;
 
                 }
@@ -158,7 +142,7 @@ namespace ItemEditor
                 countVarMappersPerInstance = 0;
                 // Populate clientMapper
                 addToMapper(obj, count);
-                firstElmMapper[firstElmMapper.Count - 1].RemoveButton = "Button";
+                firstElmMapper[^1].RemoveButton = "Button";
                 count++;
             }
         }
@@ -174,12 +158,13 @@ namespace ItemEditor
             PropertyInfo[] clientProperties = obj?.GetType().GetProperties() ?? [];
             foreach (PropertyInfo prop in clientProperties)
             {
-                VarMapper varMapper = new VarMapper();
-                varMapper.Reference = index;
-                varMapper.VarRealName = prop.Name;
-                varMapper.VarValue = prop.GetValue(obj) ?? "";
-                varMapper.ID = firstElmMapper.Count;
-                bool multiChoice = false;
+                VarMapper varMapper = new()
+                {
+                    Reference = index,
+                    VarRealName = prop.Name,
+                    VarValue = prop.GetValue(obj) ?? "",
+                    ID = firstElmMapper.Count
+                };
                 long selectionDefault = 0;
                 string selectionVariables = "";
                 object[] attrs = prop.GetCustomAttributes(true);
@@ -190,11 +175,14 @@ namespace ItemEditor
                         case CustomDescriptionAttribute att: varMapper.VarName = att.Description; break;
                         case DefaultStateAttribute att:
                             Type def = att.DefaultState.GetType();
-                            if (varMapper.VarValue == null || 
-                                varMapper.VarValue is string && string.IsNullOrEmpty(varMapper.VarValue as string) || 
-                                varMapper.VarValue is not string && varMapper.VarValue is not int && 
-                                varMapper.VarValue == Activator.CreateInstance(varMapper.VarValue?.GetType() ?? typeof(string)))
+                            if (varMapper.VarValue == null ||
+                                (varMapper.VarValue is string && string.IsNullOrEmpty(varMapper.VarValue as string)) ||
+                                (varMapper.VarValue is not string && varMapper.VarValue is not int &&
+                                varMapper.VarValue == Activator.CreateInstance(varMapper.VarValue?.GetType() ?? typeof(string))))
+                            {
                                 varMapper.VarValue = att.DefaultState;
+                            }
+
                             try
                             {
                                 selectionDefault = Convert.ToInt64(att.DefaultState);
@@ -203,19 +191,20 @@ namespace ItemEditor
                             break;
                         case CustomSelectionAttribute att: selectionVariables = att.DefaultType; break;
                         case EditableAttribute att: varMapper.Editable = att.AllowEdit; break;
-                        case BrowsableAttribute: varMapper.VarType = "FolderSelection";break;
+                        case BrowsableAttribute: varMapper.VarType = "FolderSelection"; break;
                         case FileExtensionsAttribute: varMapper.VarType = "FileSelection"; break;
                         case RequiredAttribute att: varMapper.RequiredB = true; break;
-                        case CustomImporterAttribute att: 
-                            firstElmMapper.Add(new VarMapper { 
-                                ID=firstElmMapper.Count+1,
-                                Reference = index, 
-                                VarType = "Importer", 
-                                VarName = att.Description, 
+                        case CustomImporterAttribute att:
+                            firstElmMapper.Add(new VarMapper
+                            {
+                                ID = firstElmMapper.Count + 1,
+                                Reference = index,
+                                VarType = "Importer",
+                                VarName = att.Description,
                                 SelectionOptions = att.ApplyTo.Cast<string>().ToList(),
-                                VarRealName = firstElmMapper.Count+1,
+                                VarRealName = firstElmMapper.Count + 1,
                                 VarValue = firstElmMapper.Count
-                            }); 
+                            });
                             break;
                         default:
                             break;
@@ -226,21 +215,26 @@ namespace ItemEditor
                 if (varMapper.VarName != null)
                 {
                     if (prop.PropertyType == typeof(bool))
+                    {
                         varMapper.VarType = "Boolean";
+                    }
                     else if (selectionVariables != "" && bindingFunctions.TryGetValue(selectionVariables, out Func<object, object?>? fetchFunc))
                     {
                         object resultObj = "";
-                        Dictionary<object, string> dic = new Dictionary<object, string>();
+                        Dictionary<object, string> dic = [];
                         if (!nestedResult.TryGetValue(fetchFunc.Method.Name, out dic))
-                        { 
-                            dic = new Dictionary<object, string>();
+                        {
+                            dic = [];
                             resultObj = fetchFunc.Invoke(firstElm) ?? new List<string>();
                             IList tempList = (IList)resultObj;
 
                             for (int i = 0; i < tempList.Count; i++)
                             {
                                 if (dic.ContainsKey(tempList[i]))
+                                {
                                     continue;
+                                }
+
                                 dic.Add(tempList[i], tempList[i]?.ToString() ?? "ERR NO TEXT");
                             }
 
@@ -289,10 +283,14 @@ namespace ItemEditor
 
                     }
                     else if (varMapper.VarType?.ToString() == "FolderSelection")
+                    {
                         varMapper.EditFunc = FolderSelectButton_Click;
+                    }
                     else if (varMapper.VarType?.ToString() == "FileSelection")
+                    {
                         varMapper.EditFunc = FileSelectButton_Click;
-                    else if (!namespaceStr.StartsWith("System") || prop.PropertyType.IsGenericType && (tp == typeof(ICollection<>) || tp == typeof(IList<>) || tp == typeof(List<>)))
+                    }
+                    else if (!namespaceStr.StartsWith("System") || (prop.PropertyType.IsGenericType && (tp == typeof(ICollection<>) || tp == typeof(IList<>) || tp == typeof(List<>))))
                     {
                         varMapper.VarType = "Button";
                         varMapper.EditFunc = AddICollectionButton_Click;
@@ -301,8 +299,10 @@ namespace ItemEditor
                     countVarMappersPerInstance++;
                 }
             }
-            if (firstElmMapper.Count > 0)   
-                firstElmMapper[firstElmMapper.Count - 1].LastB = true;
+            if (firstElmMapper.Count > 0)
+            {
+                firstElmMapper[^1].LastB = true;
+            }
         }
 
         private void BindItemsControl()
@@ -325,7 +325,7 @@ namespace ItemEditor
                 int count = 0;
                 int countIter = 0;
                 int invalidPerIter = 0;
-                foreach (var mapper in firstElmMapper)
+                foreach (VarMapper mapper in firstElmMapper)
                 {
                     countIter++;
                     int countCopy = count;
@@ -342,14 +342,16 @@ namespace ItemEditor
                     }
                     mapper.Required = "#FF000000";
                     if (mapper == null || mapper.VarType?.ToString() == "Importer")
+                    {
                         continue;
+                    }
 
                     object? obj = ICollectionObjs?[countCopy];
                     PropertyInfo? property = obj?.GetType().GetProperty(mapper.VarRealName?.ToString() ?? "");
-                    if (mapper.VarValue == null || mapper.VarValue is string && string.IsNullOrEmpty(mapper.VarValue as string) || mapper.VarValue is not string && mapper.VarValue is not int && mapper.VarValue == Activator.CreateInstance(mapper.VarValue?.GetType() ?? typeof(string)))
+                    if (mapper.VarValue == null || (mapper.VarValue is string && string.IsNullOrEmpty(mapper.VarValue as string)) || (mapper.VarValue is not string && mapper.VarValue is not int && mapper.VarValue == Activator.CreateInstance(mapper.VarValue?.GetType() ?? typeof(string))))
                     {
                         invalidPerIter++;
-                        if (mapper.RequiredB == true && (string)(mapper.VarType ?? "") != "Button" || mapper.RequiredB && property?.GetValue(firstElm) == null)
+                        if ((mapper.RequiredB == true && (string)(mapper.VarType ?? "") != "Button") || (mapper.RequiredB && property?.GetValue(firstElm) == null))
                         {
                             mapper.Required = "#FFE41212";
                             validIteration = false;
@@ -361,7 +363,7 @@ namespace ItemEditor
                     {
                         string namespaceStr = property.PropertyType.Namespace ?? "System";
                         tp = property.PropertyType.IsGenericType ? property.PropertyType.GetGenericTypeDefinition() : typeof(string);
-                        if (!namespaceStr.StartsWith("System") || property.PropertyType.IsGenericType && (tp == typeof(ICollection<>) || tp == typeof(ICollection<>)))
+                        if (!namespaceStr.StartsWith("System") || (property.PropertyType.IsGenericType && (tp == typeof(ICollection<>) || tp == typeof(ICollection<>))))
                         {
                             if (mapper.VarType?.ToString() == "Selection")
                             {
@@ -369,20 +371,25 @@ namespace ItemEditor
                                 bool isAnInt = int.TryParse(mapper.VarValue?.ToString() ?? "", out int resultingInt);
                                 if (mapper.VarValue is string && !isAnInt)
                                 {
-                                        obj1 = mapper.VarValue;
+                                    obj1 = mapper.VarValue;
                                 }
                                 else if (resultingInt >= 0)
                                 {
                                     bool isAnInt2 = int.TryParse(mapper.selectionIndexes.ElementAt((Index?)resultingInt ?? 0).ToString(), out int resultingInt2);
-                                    if (isAnInt2 && resultingInt2 != -2 || !isAnInt2)
+                                    if ((isAnInt2 && resultingInt2 != -2) || !isAnInt2)
+                                    {
                                         obj1 = mapper.selectionIndexes.ElementAt((Index?)resultingInt ?? 0);
+                                    }
                                 }
                                 else if (resultingInt == -1)
                                 {
                                     obj1?.GetType()?.GetProperties().ToList().ForEach(x =>
                                     {
                                         if (x.PropertyType == typeof(string))
+                                        {
                                             x.SetValue(obj1, mapper.VarValue?.ToString());
+                                        }
+
                                         return;
                                     });
                                 }
@@ -400,15 +407,20 @@ namespace ItemEditor
                             else if (resultingInt >= 0)
                             {
                                 bool isAnInt2 = int.TryParse(mapper.selectionIndexes.ElementAt((Index?)resultingInt ?? 0).ToString(), out int resultingInt2);
-                                if (isAnInt2 && resultingInt2 != -2 || !isAnInt2)
+                                if ((isAnInt2 && resultingInt2 != -2) || !isAnInt2)
+                                {
                                     ICollectionObjs[countCopy] = mapper.selectionIndexes.ElementAt((Index?)resultingInt ?? 0);
+                                }
                             }
                             else if (resultingInt == -1)
                             {
                                 ICollectionObjs?[countCopy]?.GetType()?.GetProperties().ToList().ForEach(x =>
                                 {
                                     if (x.PropertyType == typeof(string))
+                                    {
                                         x.SetValue(ICollectionObjs?[countCopy], mapper.VarValue?.ToString());
+                                    }
+
                                     return;
                                 });
                             }
@@ -425,7 +437,9 @@ namespace ItemEditor
                                 validIteration = false;
                             }
                             else
+                            {
                                 property.SetValue(ICollectionObjs?[countCopy], Convert.ChangeType(resultingVal.Item1, property.PropertyType));
+                            }
                         }
 
                     }
@@ -434,7 +448,10 @@ namespace ItemEditor
                 Type innerType = firstElm.GetType().GetGenericArguments()[0];
 
                 if (ICollectionObjs?.Count == 1 && (ICollectionObjs[0]?.Equals(Activator.CreateInstance(innerType)) ?? false))
+                {
                     ICollectionObjs.Clear();
+                }
+
                 for (int k = 0; k < ICollectionObjs?.Count; k++)
                 {
                     if (k > count)
@@ -448,16 +465,18 @@ namespace ItemEditor
             }
             else
             {
-                foreach (var mapper in firstElmMapper)
+                foreach (VarMapper mapper in firstElmMapper)
                 {
                     if (mapper.VarType?.ToString() == "Importer")
+                    {
                         continue;
+                    }
 
                     mapper.Required = "#FF000000";
-                    var property = firstElm?.GetType().GetProperty(mapper.VarRealName?.ToString() ?? "");
-                    if (mapper.VarValue == null || mapper.VarValue is string && string.IsNullOrEmpty(mapper.VarValue as string) || mapper.VarValue is not string && mapper.VarValue is not int && mapper.VarValue == Activator.CreateInstance(mapper.VarValue?.GetType() ?? typeof(string)))
+                    PropertyInfo? property = firstElm?.GetType().GetProperty(mapper.VarRealName?.ToString() ?? "");
+                    if (mapper.VarValue == null || (mapper.VarValue is string && string.IsNullOrEmpty(mapper.VarValue as string)) || (mapper.VarValue is not string && mapper.VarValue is not int && mapper.VarValue == Activator.CreateInstance(mapper.VarValue?.GetType() ?? typeof(string))))
                     {
-                        if (mapper.RequiredB == true && (string)(mapper.VarType ?? "") != "Button" || mapper.RequiredB && property?.GetValue(firstElm) == null)
+                        if ((mapper.RequiredB == true && (string)(mapper.VarType ?? "") != "Button") || (mapper.RequiredB && property?.GetValue(firstElm) == null))
                         {
                             mapper.Required = "#FFE41212";
                             validIteration = false;
@@ -482,15 +501,20 @@ namespace ItemEditor
                                 else if (resultingInt >= 0)
                                 {
                                     bool isAnInt2 = int.TryParse(mapper.selectionIndexes.ElementAt((Index?)resultingInt ?? 0).ToString(), out int resultingInt2);
-                                    if (isAnInt2 && resultingInt2 != -2 || !isAnInt2)
+                                    if ((isAnInt2 && resultingInt2 != -2) || !isAnInt2)
+                                    {
                                         obj1 = mapper.selectionIndexes.ElementAt((Index?)resultingInt ?? 0);
+                                    }
                                 }
                                 else if (resultingInt == -1)
                                 {
                                     obj1?.GetType()?.GetProperties().ToList().ForEach(x =>
                                     {
                                         if (x.PropertyType == typeof(string))
+                                        {
                                             x.SetValue(obj1, mapper.VarValue?.ToString());
+                                        }
+
                                         return;
                                     });
                                 }
@@ -498,16 +522,21 @@ namespace ItemEditor
                             }
                             continue;
                         }
-                        if (property.PropertyType.IsGenericType && (tp == typeof(ICollection<>) || tp == typeof(ICollection<>))) {
+                        if (property.PropertyType.IsGenericType && (tp == typeof(ICollection<>) || tp == typeof(ICollection<>)))
+                        {
 
                             bool isAnInt = int.TryParse(mapper.VarValue?.ToString() ?? "", out int resultingInt);
                             if (!isAnInt)
+                            {
                                 property.SetValue(firstElm, mapper.VarValue);
+                            }
                             else
                             {
                                 bool isAnInt2 = int.TryParse(mapper.selectionIndexes.ElementAt((Index?)resultingInt ?? 0).ToString(), out int resultingInt2);
-                                if (isAnInt2 && resultingInt2 != -2 || !isAnInt2)
+                                if ((isAnInt2 && resultingInt2 != -2) || !isAnInt2)
+                                {
                                     property.SetValue(firstElm, mapper.selectionIndexes.ElementAt((Index)resultingInt));
+                                }
                             }
                             continue;
                         }
@@ -521,14 +550,20 @@ namespace ItemEditor
                             else if (resultingInt >= 0)
                             {
                                 bool isAnInt2 = int.TryParse(mapper.selectionIndexes.ElementAt((Index?)resultingInt ?? 0).ToString(), out int resultingInt2);
-                                if (isAnInt2 && resultingInt2 != -2 || !isAnInt2)
+                                if ((isAnInt2 && resultingInt2 != -2) || !isAnInt2)
+                                {
                                     property.SetValue(firstElm, mapper.selectionIndexes.ElementAt((Index)resultingInt));
-                            } else if (resultingInt == -1)
+                                }
+                            }
+                            else if (resultingInt == -1)
                             {
                                 firstElm?.GetType()?.GetProperties().ToList().ForEach(x =>
                                 {
                                     if (x.PropertyType == typeof(string))
+                                    {
                                         x.SetValue(firstElm, mapper.VarValue?.ToString());
+                                    }
+
                                     return;
                                 });
                             }
@@ -544,7 +579,9 @@ namespace ItemEditor
                                 validIteration = false;
                             }
                             else
+                            {
                                 property.SetValue(firstElm, Convert.ChangeType(resultingVal.Item1, property.PropertyType));
+                            }
                         }
                     }
                 }
@@ -557,10 +594,16 @@ namespace ItemEditor
                 return;
             }
 
-            if (bindingFunctions.TryGetValue("postProcessingFunction", out var postProcessingFunction))
+            if (bindingFunctions.TryGetValue("postProcessingFunction", out Func<object, object?>? postProcessingFunction))
+            {
                 firstElm = postProcessingFunction.Invoke(firstElm ?? "") ?? "";
-            if (bindingFunctions.TryGetValue("saveFunction", out var saveFunc))
-                saveFunc.Invoke(firstElm ?? "");
+            }
+
+            if (bindingFunctions.TryGetValue("saveFunction", out Func<object, object?>? saveFunc))
+            {
+                _ = saveFunc.Invoke(firstElm ?? "");
+            }
+
             end?.Invoke();
             NavigationService.GoBack();
         }
@@ -581,10 +624,9 @@ namespace ItemEditor
                                                                                                          entry => entry.Value);
                     instanceDic["saveFunction"] = MergeICollectionEntry;
 
-                    if (bindingFunctions.TryGetValue(prop.Name + "_interceptor", out var func))
-                        NavigationService.Content = new ItemEditorPage(func.Invoke(prop.GetValue(firstElm)) ?? "", instanceDic, prop.Name, null);
-                    else
-                        NavigationService.Content = new ItemEditorPage(prop.GetValue(firstElm) ?? Activator.CreateInstance(propType) ?? "", instanceDic, prop.Name, null);
+                    NavigationService.Content = bindingFunctions.TryGetValue(prop.Name + "_interceptor", out Func<object, object?>? func)
+                        ? new ItemEditorPage(func.Invoke(prop.GetValue(firstElm)) ?? "", instanceDic, prop.Name, null)
+                        : (object)new ItemEditorPage(prop.GetValue(firstElm) ?? Activator.CreateInstance(propType) ?? "", instanceDic, prop.Name, null);
                 }
             }
         }
@@ -598,13 +640,16 @@ namespace ItemEditor
             while (firstElmMapper.FirstOrDefault(x => x.Reference == tag) != null)
             {
                 VarMapper varMapper = firstElmMapper.First(x => x.Reference == tag);
-                firstElmMapper.Remove(varMapper);
+                _ = firstElmMapper.Remove(varMapper);
             }
 
-            firstElmMapper.Select(x =>
+            _ = firstElmMapper.Select(x =>
             {
                 if (x.Reference > tag)
+                {
                     x.Reference--;
+                }
+
                 return x;
             });
             if (tag < ICollectionObjs.Count)
@@ -615,7 +660,9 @@ namespace ItemEditor
 
 
                 if (ICollectionObjs?.Count == 1 && (ICollectionObjs[0]?.Equals(Activator.CreateInstance(innerType)) ?? false))
+                {
                     ICollectionObjs.Clear();
+                }
 
                 firstElm = ICollectionObjs ?? firstElm;
             }
@@ -630,7 +677,7 @@ namespace ItemEditor
             {
                 if (x.ID == tag)
                 {
-                    Microsoft.Win32.OpenFolderDialog dlg = new Microsoft.Win32.OpenFolderDialog();
+                    Microsoft.Win32.OpenFolderDialog dlg = new();
                     if (dlg.ShowDialog() == true)
                     {
                         x.VarValue = dlg.FolderName;
@@ -648,8 +695,10 @@ namespace ItemEditor
             {
                 if (x.ID == tag)
                 {
-                    Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
-                    dlg.Filter = "All (*.*)|*.*";
+                    Microsoft.Win32.OpenFileDialog dlg = new()
+                    {
+                        Filter = "All (*.*)|*.*"
+                    };
                     if (dlg.ShowDialog() == true)
                     {
                         x.VarValue = dlg.FileName;
@@ -683,11 +732,11 @@ namespace ItemEditor
                 object? instance = Activator.CreateInstance(innerType);
 
                 IList ICollectionObjs = (IList)firstElm;
-                ICollectionObjs.Add(instance ?? throw new Exception());
+                _ = ICollectionObjs.Add(instance ?? throw new Exception());
                 firstElm = ICollectionObjs;
                 countVarMappersPerInstance = 0;
                 addToMapper(instance, firstElmMapper.Last().Reference + 1);
-                firstElmMapper[firstElmMapper.Count - 1].RemoveButton = "Button";
+                firstElmMapper[^1].RemoveButton = "Button";
             }
             catch
             {
@@ -696,18 +745,20 @@ namespace ItemEditor
 
         private object? MergeICollectionEntry(object obj)
         {
-            if (bindingFunctions.TryGetValue(tempPropertyName + "_interceptor_end", out var func))
+            if (bindingFunctions.TryGetValue(tempPropertyName + "_interceptor_end", out Func<object, object?>? func))
             {
                 object? res = func.Invoke(obj);
                 if (res != null)
                 {
-                    Type typeI = res.GetType();
+                    _ = res.GetType();
                     PropertyInfo? propI = firstElm.GetType().GetProperty(tempPropertyName);
                     propI?.SetValue(firstElm, res);
-                    foreach (var item in firstElmMapper)
+                    foreach (VarMapper item in firstElmMapper)
                     {
                         if (item?.VarRealName == tempPropertyName)
+                        {
                             item.VarValue = res;
+                        }
                     }
                 }
                 return obj;
@@ -718,19 +769,23 @@ namespace ItemEditor
             if (propType.IsGenericType && (propType == typeof(ICollection) || propType == typeof(IList) || propType == typeof(List<>)))
             {
                 prop?.SetValue(firstElm, obj);
-                foreach (var item in firstElmMapper)
+                foreach (VarMapper item in firstElmMapper)
                 {
                     if (item?.VarRealName == tempPropertyName)
+                    {
                         item.VarValue = obj;
+                    }
                 }
             }
             else
             {
                 prop?.SetValue(firstElm, Convert.ChangeType(obj, prop.PropertyType));
-                foreach (var item in firstElmMapper)
+                foreach (VarMapper item in firstElmMapper)
                 {
                     if (item?.VarRealName == tempPropertyName)
+                    {
                         item.VarValue = obj;
+                    }
                 }
             }
             return obj;
@@ -743,17 +798,26 @@ namespace ItemEditor
             int tag = int.Parse(btn.Tag?.ToString() ?? "0");
             VarMapper? importer = firstElmMapper.FirstOrDefault(x => x.ID == tag);
             if (importer == null)
+            {
                 return;
+            }
+
             VarMapper? reference = firstElmMapper.FirstOrDefault(y => y.ID == int.Parse(importer.VarValue?.ToString() ?? "0"));
-            if (reference == null || !bindingFunctions.TryGetValue(reference.VarRealName + "_Importer", out var importerFunc))
+            if (reference == null || !bindingFunctions.TryGetValue(reference.VarRealName + "_Importer", out Func<object, object?>? importerFunc))
+            {
                 return;
+            }
+
             object? res = importerFunc.Invoke(reference?.VarValue ?? "");
-            if (res == null){
+            if (res == null)
+            {
 
                 foreach (VarMapper x in firstElmMapper)
                 {
                     if (x.ID == reference?.ID)
+                    {
                         x.VarValue = "Erreur, veuillez réessayer";
+                    }
                 };
                 ClientControl.ItemsSource = new List<string>();
                 ClientControl.ItemsSource = firstElmMapper;
@@ -764,7 +828,8 @@ namespace ItemEditor
             {
                 PropertyInfo? prop = type.GetProperty(importerVal);
                 if (prop?.GetValue(res) != null)
-                    foreach(VarMapper x in firstElmMapper)
+                {
+                    foreach (VarMapper x in firstElmMapper)
                     {
                         if (x.Reference == importer.Reference && x.VarRealName?.ToString() == importerVal)
                         {
@@ -774,9 +839,9 @@ namespace ItemEditor
                             {
                                 IList? ICollectionObjs = prop.GetValue(firstElm) == null ? (IList?)Activator.CreateInstance(prop.PropertyType) : (IList?)prop.GetValue(firstElm);
                                 IList? collection1 = (IList?)prop.GetValue(res);
-                                foreach(var y in collection1??((IList)new List()))
+                                foreach (object? y in collection1 ?? ((IList)new List()))
                                 {
-                                    ICollectionObjs?.Add(y);
+                                    _ = (ICollectionObjs?.Add(y));
                                 }
                                 prop.SetValue(firstElm, ICollectionObjs);
                             }
@@ -785,7 +850,8 @@ namespace ItemEditor
                                 x.VarValue = prop.GetValue(res);
                             }
                         }
-                    };
+                    }
+                };
             }
             ClientControl.ItemsSource = new List<string>();
             ClientControl.ItemsSource = firstElmMapper;
@@ -794,21 +860,14 @@ namespace ItemEditor
         private void ComboBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             TextBox textBox = (TextBox)sender;
-            if ((bool)textBox.Tag == false || int.TryParse(textBox.Text, out int id) && id != 0)
-                textBox.Visibility = Visibility.Collapsed;
-            else
-                textBox.Visibility = Visibility.Visible;
+            textBox.Visibility = (bool)textBox.Tag == false || (int.TryParse(textBox.Text, out int id) && id != 0) ? Visibility.Collapsed : Visibility.Visible;
         }
 
         public class SelectedItemsConverter : IValueConverter
         {
             public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
             {
-                var selectedItems = value as IEnumerable<object>;
-                if (selectedItems == null || !selectedItems.Any())
-                    return "Select options";
-
-                return string.Join(", ", selectedItems.Select(i => i.ToString()));
+                return value is not IEnumerable<object> selectedItems || !selectedItems.Any() ? "Select options" : (object)string.Join(", ", selectedItems.Select(i => i.ToString()));
             }
 
             public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
