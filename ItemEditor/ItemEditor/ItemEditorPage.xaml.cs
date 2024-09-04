@@ -69,6 +69,7 @@ namespace ItemEditor
         private int countVarMappersPerInstance = 0;
         private readonly Dictionary<Type, Func<object, (object, bool)>> TypeValidator = new()
         {
+            {typeof(bool), s => {return (s, true); } },
             {typeof(string), s => {return (s, true); } },
             {typeof(decimal), s => {
                 s = s?.ToString()?.Replace(".", ",") ?? "";
