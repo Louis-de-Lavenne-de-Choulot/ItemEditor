@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -67,23 +68,22 @@ namespace ItemEditor
         private readonly Action? end;
         private string tempPropertyName = "";
         private int countVarMappersPerInstance = 0;
-        private static CultureInfo culture = CultureInfo.CreateSpecificCulture("fr-FR");
+        private static CultureInfo culture = CultureInfo.InvariantCulture;
         private readonly Dictionary<Type, Func<object, (object, bool)>> TypeValidator = new()
         {
             {typeof(bool), s => {return (s, true); } },
             {typeof(string), s => {return (s, true); } },
             {typeof(decimal), s => {
-                s = s?.ToString()?.Replace(".", ",") ?? "";
-
-                return decimal.TryParse(s.ToString(), NumberStyles.Number, culture, out _) ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
+                s = s?.ToString()?.Replace(",", ".") ?? "";
+                return Regex.IsMatch(s.ToString() ?? "", "^[0-9]+(\\.[0-9]+)?$") ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
             {typeof(double), s => {
-                s = s?.ToString()?.Replace(".", ",") ?? "";
-                return double.TryParse(s.ToString(), NumberStyles.Number, culture, out _)  ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
+                s = s?.ToString()?.Replace(",", ".") ?? "";
+                return Regex.IsMatch(s.ToString() ?? "", "^[0-9]+(\\.[0-9]+)?$")  ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
             {typeof(float), s => {
-                s = s?.ToString()?.Replace(".", ",") ?? "";
-                return float.TryParse(s.ToString(), NumberStyles.Number, culture, out _)  ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
-            {typeof(int), s => {return (s, int.TryParse(s.ToString(), NumberStyles.Number, culture, out _) ); } },
-            {typeof(long), s => {return (s, long.TryParse(s.ToString(), NumberStyles.Number, culture, out _) ); } }
+                s = s?.ToString()?.Replace(",", ".") ?? "";
+                return Regex.IsMatch(s.ToString() ?? "", "^[0-9]+(\\.[0-9]+)?$")   ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
+            {typeof(int), s => {return (s, int.TryParse(s.ToString(),  out _) ); } },
+            {typeof(long), s => {return (s, long.TryParse(s.ToString(), out _) ); } }
         };
         public ItemEditorPage(object firstElm, Dictionary<string, Func<object, object?>> bindingFunctions, string pageTitle = "", Action? end = null)
         {
