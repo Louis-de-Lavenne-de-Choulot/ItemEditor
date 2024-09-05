@@ -394,7 +394,7 @@ namespace ItemEditor
                                         return;
                                     });
                                 }
-                                property.SetValue(ICollectionObjs?[countCopy], Convert.ChangeType(obj1, property.PropertyType));
+                                property.SetValue(ICollectionObjs?[countCopy], Convert.ChangeType(obj1, property.PropertyType, new CultureInfo("fr-FR", false)));
                             }
                             continue;
                         }
@@ -438,7 +438,7 @@ namespace ItemEditor
                             }
                             else
                             {
-                                property.SetValue(ICollectionObjs?[countCopy], Convert.ChangeType(resultingVal.Item1, property.PropertyType));
+                                property.SetValue(ICollectionObjs?[countCopy], Convert.ChangeType(resultingVal.Item1, property.PropertyType, new CultureInfo("fr-FR", false)));
                             }
                         }
 
@@ -518,7 +518,7 @@ namespace ItemEditor
                                         return;
                                     });
                                 }
-                                property.SetValue(firstElm, Convert.ChangeType(obj1, property.PropertyType));
+                                property.SetValue(firstElm, Convert.ChangeType(obj1, property.PropertyType, new CultureInfo("fr-FR", false)));
                             }
                             continue;
                         }
@@ -580,7 +580,7 @@ namespace ItemEditor
                             }
                             else
                             {
-                                property.SetValue(firstElm, Convert.ChangeType(resultingVal.Item1, property.PropertyType));
+                                property.SetValue(firstElm, Convert.ChangeType(resultingVal.Item1, property.PropertyType, new CultureInfo("fr-FR", false)));
                             }
                         }
                     }
@@ -779,7 +779,7 @@ namespace ItemEditor
             }
             else
             {
-                prop?.SetValue(firstElm, Convert.ChangeType(obj, prop.PropertyType));
+                prop?.SetValue(firstElm, Convert.ChangeType(obj, prop.PropertyType, new CultureInfo("fr-FR", false)));
                 foreach (VarMapper item in firstElmMapper)
                 {
                     if (item?.VarRealName?.ToString() == tempPropertyName)
