@@ -67,21 +67,23 @@ namespace ItemEditor
         private readonly Action? end;
         private string tempPropertyName = "";
         private int countVarMappersPerInstance = 0;
+        private static CultureInfo culture = CultureInfo.CreateSpecificCulture("fr-FR");
         private readonly Dictionary<Type, Func<object, (object, bool)>> TypeValidator = new()
         {
             {typeof(bool), s => {return (s, true); } },
             {typeof(string), s => {return (s, true); } },
             {typeof(decimal), s => {
                 s = s?.ToString()?.Replace(".", ",") ?? "";
-                return decimal.TryParse(s.ToString(), out _) ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
+
+                return decimal.TryParse(s.ToString(), NumberStyles.Number, culture, out _) ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
             {typeof(double), s => {
                 s = s?.ToString()?.Replace(".", ",") ?? "";
-                return double.TryParse(s.ToString(), out _) ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
+                return double.TryParse(s.ToString(), NumberStyles.Number, culture, out _)  ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
             {typeof(float), s => {
                 s = s?.ToString()?.Replace(".", ",") ?? "";
-                return float.TryParse(s.ToString(), out _) ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
-            {typeof(int), s => {return (s, int.TryParse(s.ToString(), out _)); } },
-            {typeof(long), s => {return (s, long.TryParse(s.ToString(), out _)); } }
+                return float.TryParse(s.ToString(), NumberStyles.Number, culture, out _)  ? ((object, bool))(s, true) : ((object, bool))(s, false); } },
+            {typeof(int), s => {return (s, int.TryParse(s.ToString(), NumberStyles.Number, culture, out _) ); } },
+            {typeof(long), s => {return (s, long.TryParse(s.ToString(), NumberStyles.Number, culture, out _) ); } }
         };
         public ItemEditorPage(object firstElm, Dictionary<string, Func<object, object?>> bindingFunctions, string pageTitle = "", Action? end = null)
         {
@@ -90,7 +92,7 @@ namespace ItemEditor
             this.bindingFunctions = bindingFunctions;
             this.firstElm = firstElm;
             this.end = end;
-
+            
             object[] attrs = firstElm.GetType().GetCustomAttributes(true);
             Type tp = firstElm.GetType().IsGenericType ? firstElm.GetType().GetGenericTypeDefinition() : typeof(string);
             if (firstElm.GetType().IsGenericType && (tp == typeof(ICollection) || tp == typeof(IList) || tp == typeof(List<>)))
@@ -394,7 +396,7 @@ namespace ItemEditor
                                         return;
                                     });
                                 }
-                                property.SetValue(ICollectionObjs?[countCopy], Convert.ChangeType(obj1, property.PropertyType, new CultureInfo("fr-FR", false)));
+                                property.SetValue(ICollectionObjs?[countCopy], Convert.ChangeType(obj1, property.PropertyType, culture));
                             }
                             continue;
                         }
@@ -438,7 +440,7 @@ namespace ItemEditor
                             }
                             else
                             {
-                                property.SetValue(ICollectionObjs?[countCopy], Convert.ChangeType(resultingVal.Item1, property.PropertyType, new CultureInfo("fr-FR", false)));
+                                property.SetValue(ICollectionObjs?[countCopy], Convert.ChangeType(resultingVal.Item1, property.PropertyType, culture));
                             }
                         }
 
@@ -518,7 +520,7 @@ namespace ItemEditor
                                         return;
                                     });
                                 }
-                                property.SetValue(firstElm, Convert.ChangeType(obj1, property.PropertyType, new CultureInfo("fr-FR", false)));
+                                property.SetValue(firstElm, Convert.ChangeType(obj1, property.PropertyType, culture));
                             }
                             continue;
                         }
@@ -580,7 +582,7 @@ namespace ItemEditor
                             }
                             else
                             {
-                                property.SetValue(firstElm, Convert.ChangeType(resultingVal.Item1, property.PropertyType, new CultureInfo("fr-FR", false)));
+                                property.SetValue(firstElm, Convert.ChangeType(resultingVal.Item1, property.PropertyType, culture));
                             }
                         }
                     }
@@ -779,7 +781,7 @@ namespace ItemEditor
             }
             else
             {
-                prop?.SetValue(firstElm, Convert.ChangeType(obj, prop.PropertyType, new CultureInfo("fr-FR", false)));
+                prop?.SetValue(firstElm, Convert.ChangeType(obj, prop.PropertyType, culture));
                 foreach (VarMapper item in firstElmMapper)
                 {
                     if (item?.VarRealName?.ToString() == tempPropertyName)
