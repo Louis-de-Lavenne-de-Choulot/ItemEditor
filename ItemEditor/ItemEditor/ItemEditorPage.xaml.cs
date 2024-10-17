@@ -255,8 +255,9 @@ namespace ItemEditor
                         keys.Insert(0, -2);
                         values.Insert(0, "Aucune");
 
-
-                        long indx = values.IndexOf(varMapper.VarValue?.ToString() ?? "");
+                        bool selectedF = bindingFunctions.TryGetValue(varMapper.VarRealName + "_selected_selector_value", out Func<object, object?>? selectedFunc);
+                        KeyValuePair<object, object> kvp = new(values, varMapper.VarValue);
+                        long indx = selectedF ? (long)selectedFunc.Invoke(kvp) : values.IndexOf(varMapper.VarValue?.ToString() ?? "");
                         if (indx == -1 && varMapper.VarValue != null && varMapper.VarValue.GetType() == typeof(string) && varMapper.VarValue.ToString() != "")
                         {
                             indx = keys.Count;
@@ -495,8 +496,10 @@ namespace ItemEditor
                             {
                                 object? obj1 = Activator.CreateInstance(property.PropertyType);
                                 bool isAnInt = int.TryParse(mapper.VarValue?.ToString() ?? "", out int resultingInt);
-
-                                if (mapper.VarValue is string && obj1?.GetType() == typeof(string) && !isAnInt)
+                                
+                                if (bindingFunctions.TryGetValue(mapper.VarRealName + "_value_cast", out var func))
+                                    obj1 = func.Invoke(mapper.VarValue ?? "");
+                                else if (mapper.VarValue is string && obj1?.GetType() == typeof(string) && !isAnInt)
                                 {
                                     obj1 = mapper.VarValue;
                                 }
@@ -545,7 +548,9 @@ namespace ItemEditor
                         if (mapper.VarType?.ToString() == "Selection")
                         {
                             bool isAnInt = int.TryParse(mapper.VarValue?.ToString() ?? "", out int resultingInt);
-                            if (mapper.VarValue is string && !isAnInt)
+                            if (bindingFunctions.TryGetValue(mapper.VarRealName+"_value_cast", out var func))
+                                property.SetValue(firstElm, func.Invoke(mapper.VarValue??""));
+                            else if (mapper.VarValue is string && !isAnInt)
                             {
                                 property.SetValue(firstElm, mapper.VarValue);
                             }
