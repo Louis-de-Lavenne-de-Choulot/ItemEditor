@@ -19,6 +19,7 @@ namespace ItemEditor
         private string? _name { get; set; }
         public string? VarName { get => RequiredB ? (_name ?? "") + " *" : _name; set => _name = value ?? ""; }
         public object? VarValue { get; set; }
+        public object? VarRealValue { get; set; }
         public object? VarRealName { get; set; }
         public object? VarType { get; set; }
         public int Reference { get; set; }
@@ -65,6 +66,7 @@ namespace ItemEditor
         private readonly Dictionary<string, Func<object, object?>> bindingFunctions = [];
         private readonly Dictionary<string, Dictionary<object, string>> nestedResult = [];
         private object firstElm;
+        bool isEnumWithFlag = false;
         private readonly Action? end;
         private string tempPropertyName = "";
         private int countVarMappersPerInstance = 0;
@@ -113,6 +115,10 @@ namespace ItemEditor
                 {
                     PageTitle.Text = descriptionAttribute.Description;
                 }
+                if (attr is FlagsAttribute flagsAttribute)
+                {
+                    isEnumWithFlag = true;
+                }
             }
             BindItemsControl();
         }
@@ -158,14 +164,24 @@ namespace ItemEditor
 
         private void addToMapper(object? obj, int index)
         {
+
+            MemberInfo[] clientMethods = obj?.GetType().GetMembers(BindingFlags.Public | BindingFlags.Static) ?? [];
             PropertyInfo[] clientProperties = obj?.GetType().GetProperties() ?? [];
-            foreach (PropertyInfo prop in clientProperties)
+            addToMapperLoop(obj, index, clientMethods);
+            addToMapperLoop(obj, index, clientProperties);
+        }   
+
+
+        private void addToMapperLoop(object? obj, int index, dynamic props)
+        {
+            bool propsIsMember = props.GetType() == typeof(MemberInfo[]);
+            foreach (dynamic prop in props)
             {
                 VarMapper varMapper = new()
                 {
                     Reference = index,
                     VarRealName = prop.Name,
-                    VarValue = prop.GetValue(obj) ?? "",
+                    VarValue = propsIsMember ? false : prop.GetValue(obj) ?? "",
                     ID = firstElmMapper.Count
                 };
                 long selectionDefault = 0;
@@ -213,12 +229,22 @@ namespace ItemEditor
                             break;
                     }
                 }
-                string namespaceStr = prop.PropertyType.Namespace ?? "System";
-                Type tp = prop.PropertyType.IsGenericType ? prop.PropertyType.GetGenericTypeDefinition() : typeof(string);
+                string namespaceStr = propsIsMember ? "System" : prop.PropertyType.Namespace ?? "System";
+                Type tp = propsIsMember ? prop.DeclaringType : prop.PropertyType.IsGenericType ? prop.PropertyType.GetGenericTypeDefinition() : typeof(string);
                 if (varMapper.VarName != null)
                 {
-                    if (prop.PropertyType == typeof(bool))
+                    if (propsIsMember || prop.PropertyType == typeof(bool))
                     {
+                        Enum.TryParse(prop.DeclaringType, prop.Name, out dynamic res);
+                        if (propsIsMember)
+                        {
+                            if (obj?.GetType().GetCustomAttribute<FlagsAttribute>() != null)
+                            {
+                                varMapper.VarValue = ((Enum)firstElm).HasFlag(res);
+                                varMapper.VarRealValue = (int)res;
+                            }
+                        }
+                        
                         varMapper.VarType = "Boolean";
                     }
                     else if (selectionVariables != "" && bindingFunctions.TryGetValue(selectionVariables, out Func<object, object?>? fetchFunc))
@@ -257,7 +283,7 @@ namespace ItemEditor
 
                         bool selectedF = bindingFunctions.TryGetValue(varMapper.VarRealName + "_selected_selector_value", out Func<object, object?>? selectedFunc);
                         KeyValuePair<object, object> kvp = new(values, varMapper.VarValue);
-                        long indx = selectedF ? (long)selectedFunc.Invoke(kvp) : values.IndexOf(varMapper.VarValue?.ToString() ?? "");
+                        long indx = selectedF ? (long?)selectedFunc?.Invoke(kvp) ?? 0 : values.IndexOf(varMapper.VarValue?.ToString() ?? "");
                         if (indx == -1 && varMapper.VarValue != null && varMapper.VarValue.GetType() == typeof(string) && varMapper.VarValue.ToString() != "")
                         {
                             indx = keys.Count;
@@ -468,6 +494,8 @@ namespace ItemEditor
             }
             else
             {
+                if (firstElm.GetType().BaseType == typeof(Enum))
+                    firstElm = Activator.CreateInstance(firstElm.GetType()) ?? new();
                 foreach (VarMapper mapper in firstElmMapper)
                 {
                     if (mapper.VarType?.ToString() == "Importer")
@@ -496,7 +524,7 @@ namespace ItemEditor
                             {
                                 object? obj1 = Activator.CreateInstance(property.PropertyType);
                                 bool isAnInt = int.TryParse(mapper.VarValue?.ToString() ?? "", out int resultingInt);
-                                
+
                                 if (bindingFunctions.TryGetValue(mapper.VarRealName + "_value_cast", out var func))
                                     obj1 = func.Invoke(mapper.VarValue ?? "");
                                 else if (mapper.VarValue is string && obj1?.GetType() == typeof(string) && !isAnInt)
@@ -548,8 +576,8 @@ namespace ItemEditor
                         if (mapper.VarType?.ToString() == "Selection")
                         {
                             bool isAnInt = int.TryParse(mapper.VarValue?.ToString() ?? "", out int resultingInt);
-                            if (bindingFunctions.TryGetValue(mapper.VarRealName+"_value_cast", out var func))
-                                property.SetValue(firstElm, func.Invoke(mapper.VarValue??""));
+                            if (bindingFunctions.TryGetValue(mapper.VarRealName + "_value_cast", out var func))
+                                property.SetValue(firstElm, func.Invoke(mapper.VarValue ?? ""));
                             else if (mapper.VarValue is string && !isAnInt)
                             {
                                 property.SetValue(firstElm, mapper.VarValue);
@@ -591,6 +619,10 @@ namespace ItemEditor
                             }
                         }
                     }
+                    else if (mapper.VarRealValue != null && ((bool?)mapper.VarValue ?? false))
+                    {
+                        firstElm = (int)firstElm!  | (int?)mapper.VarRealValue ??0;
+                    }
                 }
 
             }
@@ -630,10 +662,10 @@ namespace ItemEditor
                     Dictionary<string, Func<object, object?>> instanceDic = bindingFunctions.ToDictionary(entry => entry.Key,
                                                                                                          entry => entry.Value);
                     instanceDic["saveFunction"] = MergeICollectionEntry;
-
+                    object obj = prop.GetValue(firstElm) ?? Activator.CreateInstance(propType) ?? "";
                     NavigationService.Content = bindingFunctions.TryGetValue(prop.Name + "_interceptor", out Func<object, object?>? func)
-                        ? new ItemEditorPage(func.Invoke(prop.GetValue(firstElm) ?? "") ?? "", instanceDic, prop.Name, null)
-                        : (object)new ItemEditorPage(prop.GetValue(firstElm) ?? Activator.CreateInstance(propType) ?? "", instanceDic, prop.Name, null);
+                        ? new ItemEditorPage(func.Invoke(obj) ?? "", instanceDic, prop.Name, null)
+                        : (object)new ItemEditorPage(obj, instanceDic, prop.Name, null);
                 }
             }
         }
@@ -786,7 +818,10 @@ namespace ItemEditor
             }
             else
             {
-                prop?.SetValue(firstElm, Convert.ChangeType(obj, prop.PropertyType, culture));
+                if (prop?.PropertyType.BaseType == typeof(Enum))
+                    prop?.SetValue(firstElm, Enum.ToObject(prop.PropertyType, obj));
+                else
+                    prop?.SetValue(firstElm, Convert.ChangeType(obj, prop.PropertyType, culture));
                 foreach (VarMapper item in firstElmMapper)
                 {
                     if (item?.VarRealName?.ToString() == tempPropertyName)
