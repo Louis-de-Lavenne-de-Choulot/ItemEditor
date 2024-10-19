@@ -111,7 +111,7 @@
                                     <WrapPanel>
                                         <StackPanel Tag="{Binding VarType}">
                                             <TextBlock VerticalAlignment="Center" MinWidth="200" Text="{Binding VarName}"   Tag="{Binding Required}" Foreground="{Binding Required}" FontSize="25"/>
-                                            <TextBox   VerticalAlignment="Center" MinWidth="200" Text="{Binding VarValue}"  Tag="{Binding VarType}"  FontSize="25" TextWrapping="Wrap"/>
+                                            <TextBox   VerticalAlignment="Center" MinWidth="200" Tag="{Binding VarType}" ToolTip="{Binding .}" FontSize="25" TextWrapping="Wrap" TextChanged="TextBox_TextChanged"/>
                                             <Button    VerticalAlignment="Center" MinWidth="200" HorizontalAlignment="Left" Tag="{Binding VarType}"     Height="40" Click="CallFuncButton_Click" Content="Y aller" CommandParameter="{Binding VarRealName}"  ToolTip="{Binding ID}"/>
                                             <Button    VerticalAlignment="Center" MinWidth="200" HorizontalAlignment="Left" Tag="{Binding VarRealName}" Height="40" Click="ImporterButton_Click" FontSize="20" Content="{Binding VarName}" CommandParameter="{Binding VarType}" Padding="2"/>
                                             <ComboBox  VerticalAlignment="Center" MinWidth="200" HorizontalAlignment="Left" Tag="{Binding VarType}"     Height="40" SelectedIndex="{Binding VarValue}" ItemsSource="{Binding SelectionOptions}"/>

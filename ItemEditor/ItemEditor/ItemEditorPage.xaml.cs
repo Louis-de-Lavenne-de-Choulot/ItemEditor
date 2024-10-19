@@ -27,6 +27,7 @@ namespace ItemEditor
         public ICollection<object> selectionIndexes { get; set; }
         public ICollection<string> SelectionOptions { get; set; }
         public bool Editable { get; set; } = false;
+        public bool Secret { get; set; } = false;
         public Action<object, RoutedEventArgs>? EditFunc { get; set; }
         public string? Required { get; set; }
         private bool _required { get; set; }
@@ -213,6 +214,7 @@ namespace ItemEditor
                         case BrowsableAttribute: varMapper.VarType = "FolderSelection"; break;
                         case FileExtensionsAttribute: varMapper.VarType = "FileSelection"; break;
                         case RequiredAttribute att: varMapper.RequiredB = true; break;
+                        case ObfuscationAttribute obf: varMapper.Secret = true; break;
                         case CustomImporterAttribute att:
                             firstElmMapper.Add(new VarMapper
                             {
@@ -916,6 +918,28 @@ namespace ItemEditor
             {
                 throw new NotImplementedException();
             }
+        }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox textBox = (TextBox)sender;
+            string secretVal = textBox.Text;
+            VarMapper vmp = (VarMapper)textBox.ToolTip;
+            if (vmp.VarValue is null)
+                vmp.VarValue = "";
+            if (vmp.Secret)
+            {
+                int valL = vmp.VarValue.ToString()?.Length ?? 0;
+                if (secretVal.Length > valL)
+                    vmp.VarValue += secretVal.Last().ToString();
+                else if (secretVal.Length < valL)
+                    vmp.VarValue = vmp.VarValue.ToString()?.Remove(valL - 1);
+                else vmp.VarValue = "";
+                textBox.Text = new string('*', secretVal.Length);
+                textBox.Select(textBox.Text.Length, 0);
+            }
+            else
+                vmp.VarValue = secretVal;
         }
     }
 }
