@@ -1,4 +1,4 @@
-# ItemEditor
+# C# ItemEditor
 
 We all got this badly written but super useful code, here is mine.
 Powerful, Time Savy and fast but unreadable by anyone else than god and myself.
@@ -15,41 +15,41 @@ The value you want to pass to be edited. It can be any classes or Enums etc...
 Each editable variable needs at least one of the following attributes to be shown in the editor.
 
 Here are all the attributes you can use and their specifics  :
-```bash
+```css
     CustomDescriptionAttribute(string)
-    => to use on the $class or on a $variable
+    => to use on the .class or on a .variable
     =  The message that will be displayed above the input field.
 
     DefaultStateAttribute(value)
-    => to use on a $variable
+    => to use on a .variable
     =  This will add a default value
 
     CustomSelectionAttribute(string)
-    => to use on a $variable
-    =  This will call the $function in $bindingFunctions that match the string
+    => to use on a .variable
+    =  This will call the function in bindingFunctions that match the string
     
     EditableAttribute(bool)
-    => to use on a $variable with $CustomSelectionAttribute
+    => to use on a .variable with .CustomSelectionAttribute
     =  This will add a choice in the dropdown that will make a Textbox appear for the user to write his own result
     
     BrowsableAttribute
-    => to use on a $string_variable
+    => to use on a .string_variable
     =  This will change the field to a button that opens a directory selector
     
     FileExtensionsAttribute
-    => to use on a $string_variable
+    => to use on a .string_variable
     =  This will change the field to a button that opens a file selector
     
     RequiredAttribute
-    => to use on a $variable
+    => to use on a .variable
     =  This will lock the save button until the field has a value
 
     ObfuscationAttribute
-    => to use on a $variable
+    => to use on a .variable
     =  This will make the input field hide letters with * appearing instead.
 
     CustomImporterAttribute(string, List<string>)
-    => to use on a $variable
+    => to use on a .variable
     =  This will add a separate block above with:
     =  an input field
     =  a title that has the string parameter as text
