@@ -10,6 +10,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Media;
+using System.Xml.Linq;
 
 namespace ItemEditor
 {
@@ -24,12 +26,15 @@ namespace ItemEditor
         public object? VarType { get; set; }
         public int Reference { get; set; }
         public string RemoveButton { get; set; }
+        public object? SecretVal { get; set; }
         public ICollection<object> selectionIndexes { get; set; }
         public ICollection<string> SelectionOptions { get; set; }
         public bool Editable { get; set; } = false;
         public bool Secret { get; set; } = false;
         public Action<object, RoutedEventArgs>? EditFunc { get; set; }
         public string? Required { get; set; }
+        public RegularExpressionAttribute? RequiredRegex { get; set; }
+        public string RequiredErrorDescriptor { get; set; }
         private bool _required { get; set; }
         public bool RequiredB
         {
@@ -183,6 +188,7 @@ namespace ItemEditor
                     Reference = index,
                     VarRealName = prop.Name,
                     VarValue = propsIsMember ? false : prop.GetValue(obj) ?? "",
+                    SecretVal = propsIsMember ? false : prop.GetValue(obj) ?? "",
                     ID = firstElmMapper.Count
                 };
                 long selectionDefault = 0;
@@ -201,6 +207,7 @@ namespace ItemEditor
                                 varMapper.VarValue == Activator.CreateInstance(varMapper.VarValue?.GetType() ?? typeof(string))))
                             {
                                 varMapper.VarValue = att.DefaultState;
+                                varMapper.SecretVal = att.DefaultState;
                             }
 
                             try
@@ -214,6 +221,7 @@ namespace ItemEditor
                         case BrowsableAttribute: varMapper.VarType = "FolderSelection"; break;
                         case FileExtensionsAttribute: varMapper.VarType = "FileSelection"; break;
                         case RequiredAttribute att: varMapper.RequiredB = true; break;
+                        case RegularExpressionAttribute att: varMapper.RequiredRegex = att; break;
                         case ObfuscationAttribute obf: varMapper.Secret = true; break;
                         case CustomImporterAttribute att:
                             firstElmMapper.Add(new VarMapper
@@ -237,9 +245,9 @@ namespace ItemEditor
                 {
                     if (propsIsMember || prop.PropertyType == typeof(bool))
                     {
-                        Enum.TryParse(prop.DeclaringType, prop.Name, out dynamic res);
                         if (propsIsMember)
                         {
+                            Enum.TryParse(prop.DeclaringType, prop.Name, out dynamic res);
                             if (obj?.GetType().GetCustomAttribute<FlagsAttribute>() != null)
                             {
                                 varMapper.VarValue = ((Enum)firstElm).HasFlag(res);
@@ -309,6 +317,7 @@ namespace ItemEditor
                         }
 
                         varMapper.VarValue = indx == -1 ? selectionDefault.ToString() : indx.ToString();
+                        varMapper.SecretVal = indx == -1 ? selectionDefault.ToString() : indx.ToString();
 
                         varMapper.selectionIndexes = keys;
                         varMapper.SelectionOptions = values;
@@ -516,6 +525,15 @@ namespace ItemEditor
                             continue;
                         }
                     }
+
+                    if (mapper.RequiredRegex != null && !mapper.RequiredRegex.IsValid(mapper.VarValue))
+                    {
+                            mapper.RequiredErrorDescriptor = mapper.RequiredRegex.ErrorMessage ?? "";
+                            mapper.Required = "#FFE41212";
+                            validIteration = false;
+                            continue;
+                    }
+                    
                     if (property != null)
                     {
                         string namespaceStr = property.PropertyType.Namespace ?? "System";
@@ -920,6 +938,7 @@ namespace ItemEditor
             }
         }
 
+        private bool ValidationUIUpdate = false;
         private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             TextBox textBox = (TextBox)sender;
@@ -934,12 +953,43 @@ namespace ItemEditor
                     vmp.VarValue += secretVal.Last().ToString();
                 else if (secretVal.Length < valL)
                     vmp.VarValue = vmp.VarValue.ToString()?.Remove(valL - 1);
-                else vmp.VarValue = "";
+
                 textBox.Text = new string('*', secretVal.Length);
                 textBox.Select(textBox.Text.Length, 0);
             }
             else
                 vmp.VarValue = secretVal;
+            if(vmp.RequiredRegex != null)
+            {
+                if (!vmp.RequiredRegex.IsValid(vmp.VarValue))
+                {
+                    vmp.RequiredErrorDescriptor = vmp.RequiredRegex.ErrorMessage ?? "";
+                    vmp.Required = "#FFE41212";
+                    firstElmMapper.Remove(vmp);
+                    vmp.SecretVal = secretVal;
+                    ValidationUIUpdate = true;
+                    firstElmMapper.Insert(vmp.ID, vmp);
+                }
+                else
+                {
+                    vmp.RequiredErrorDescriptor = "";
+                    vmp.Required = Colors.Green.ToString();
+                    firstElmMapper.Remove(vmp);
+                    vmp.SecretVal = secretVal;
+                    ValidationUIUpdate = true;
+                    firstElmMapper.Insert(vmp.ID, vmp);
+                }
+            }
+        }
+
+        private void TextBox_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (!ValidationUIUpdate)
+                return;
+            TextBox uiElement = (TextBox)sender;
+            uiElement.Select(uiElement.Text.Length, 0);
+            uiElement.Focus();
+            ValidationUIUpdate = false;
         }
     }
 }

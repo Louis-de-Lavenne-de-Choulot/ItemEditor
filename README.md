@@ -43,6 +43,10 @@ Here are all the attributes you can use and their specifics  :
     RequiredAttribute
     => to use on a .variable
     =  This will lock the save button until the field has a value
+    
+    RegexExpressionAttribute(string, ErrorMessage= string)
+    => to use on a .variable
+    =  This will, coupled with RequiredAttribute, force a special condition to allow saving.
 
     ObfuscationAttribute
     => to use on a .variable
