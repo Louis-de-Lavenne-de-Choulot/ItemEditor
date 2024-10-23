@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Xml.Linq;
 
@@ -990,6 +991,23 @@ namespace ItemEditor
             uiElement.Select(uiElement.Text.Length, 0);
             uiElement.Focus();
             ValidationUIUpdate = false;
+        }
+
+        private void Page_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+                SaveButton_Click(sender, new());
+
+            if (e.Key == Key.Tab)
+            {
+                // Check if the focused element is the non-navigable item
+                if (Keyboard.FocusedElement is ScrollViewer)
+                {
+                    // Move focus to the next item
+                    e.Handled = true; // Prevent the default tab behavior
+                    MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+                }
+            }
         }
     }
 }

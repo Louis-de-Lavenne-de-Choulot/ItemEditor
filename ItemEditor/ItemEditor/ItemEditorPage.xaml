@@ -6,7 +6,9 @@
       xmlns:local="clr-namespace:ItemEditor"
       mc:Ignorable="d" 
       d:DesignHeight="700" d:DesignWidth="1100"
-      Title="Add An Item">
+      Title="Add An Item"
+      PreviewKeyDown="Page_KeyDown"
+    >
     <Page.Resources>
 
         <Style x:Key="NewSelectionElm" TargetType="{x:Type TextBox}">
