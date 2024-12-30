@@ -910,7 +910,7 @@ namespace ItemEditor
                             }
                             else
                             {
-                                x.VarValue = prop.GetValue(res);
+                                x.SecretVal = prop.GetValue(res);
                             }
                         }
                     }
