@@ -97,7 +97,7 @@
         </Grid.RowDefinitions>
         <Grid Margin="20">
             <Button Content="X" Click="CloseButton_Click" Visibility="Visible" FontSize="20" HorizontalAlignment="Left" Background="#CCE6462D" Padding="5" Width="90"/>
-            <Button Content="Sauvegarder" Click="SaveButton_Click" Visibility="Visible" FontSize="20"  HorizontalAlignment="Right" Background="#CC5AD25A" Padding="5" Width="130"/>
+            <Button x:Name="SaveButton" Content="Sauvegarder" Click="SaveButton_Click" Visibility="Visible" FontSize="20"  HorizontalAlignment="Right" Background="#CC5AD25A" Padding="5" Width="130"/>
         </Grid>
         <Grid Margin="50, 0, 50, 50" Grid.Row="2">
             <Grid.RowDefinitions>

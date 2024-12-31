@@ -101,7 +101,10 @@ namespace ItemEditor
             this.bindingFunctions = bindingFunctions;
             this.firstElm = firstElm;
             this.end = end;
-            
+            if (bindingFunctions.TryGetValue("setSaveButtonText", out Func<object, object?>? btnTxtFunc)){
+                string? buttonText = (string?)btnTxtFunc.Invoke("Sauvegarder");
+                SaveButton.Content = buttonText ?? "Sauvegarder";
+            }
             object[] attrs = firstElm.GetType().GetCustomAttributes(true);
             Type tp = firstElm.GetType().IsGenericType ? firstElm.GetType().GetGenericTypeDefinition() : typeof(string);
             if (firstElm.GetType().IsGenericType && (tp == typeof(ICollection) || tp == typeof(IList) || tp == typeof(List<>)))
@@ -572,7 +575,10 @@ namespace ItemEditor
                                         return;
                                     });
                                 }
-                                property.SetValue(firstElm, Convert.ChangeType(obj1, property.PropertyType, culture));
+                                if (property.PropertyType.GetTypeInfo().IsEnum)
+                                    property.SetValue(firstElm, Enum.Parse(property.PropertyType, obj1?.ToString()!));
+                                else
+                                    property.SetValue(firstElm, Convert.ChangeType(obj1, property.PropertyType, culture));
                             }
                             continue;
                         }
