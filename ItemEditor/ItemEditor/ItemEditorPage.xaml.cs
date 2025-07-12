@@ -64,6 +64,12 @@ namespace ItemEditor
         }
     }
 
+    public class PrimaryStringWrapper
+    {
+        [CustomDescription("Entre votre texte")]
+        public required string TextField { get; set; }
+    }
+
     /// <summary>
     /// Logique d'interaction pour ItemEditorPage.xaml
     /// </summary>
@@ -137,15 +143,23 @@ namespace ItemEditor
         {
             AddEntry.Tag = "Button";
             IList ICollectionObjs = (IList)firstElm;
+            // Get the inner object type
+            Type innerType = firstElm.GetType().GetGenericArguments()[0];
+
+            if (innerType.Name == "String")
+            {
+                ICollectionObjs = ((List<string>)ICollectionObjs).Select(s => new PrimaryStringWrapper() { TextField = s }).ToList();
+                firstElm = ICollectionObjs;
+                innerType = typeof(PrimaryStringWrapper);
+                bindingFunctions["postProcessingFunction"] = UnWrapStringWrapper;
+
+            }
             if (ICollectionObjs.Count == 0)
             {
-                // Get the inner object type
-                Type innerType = firstElm.GetType().GetGenericArguments()[0];
-
                 // Create an instance of the inner object type
                 try
                 {
-                    object? instance = Activator.CreateInstance(innerType);
+                    object? instance = instance = Activator.CreateInstance(innerType);
                     _ = ICollectionObjs.Add(instance ?? throw new Exception());
                     firstElm = ICollectionObjs;
 
@@ -164,6 +178,15 @@ namespace ItemEditor
                 firstElmMapper[^1].RemoveButton = "Button";
                 count++;
             }
+        }
+
+        private object UnWrapStringWrapper(object? obj)
+        {
+            if (obj is IList<PrimaryStringWrapper> wrapper)
+            {
+                return wrapper.Select(w => w.TextField).ToList();
+            }
+            return obj ?? "";
         }
 
         private void PopulateMappersClass()
