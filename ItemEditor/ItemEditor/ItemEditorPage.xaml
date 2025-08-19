@@ -30,7 +30,6 @@
             </ResourceDictionary>
 
             <ResourceDictionary x:Key="DarkTheme">
-                <!-- Improved dark theme with better contrast and readability -->
                 <SolidColorBrush x:Key="ItemEditorTextPrimaryColor" Color="#F8FAFC"/>
                 <SolidColorBrush x:Key="ItemEditorBackgroundColor" Color="#0F172A"/>
                 <SolidColorBrush x:Key="ItemEditorCardBackgroundColor" Color="#1E293B"/>

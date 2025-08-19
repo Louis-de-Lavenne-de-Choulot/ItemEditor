@@ -209,7 +209,6 @@ namespace ItemEditor
             }
         }
 
-        // Optional: Method to manually switch themes (for testing or user preference)
         public void SwitchTheme(bool toDarkTheme)
         {
             ApplyTheme(toDarkTheme);
