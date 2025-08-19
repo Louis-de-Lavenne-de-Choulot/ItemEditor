@@ -1,4 +1,5 @@
 ﻿using CustomItemEditorAttributes;
+using Microsoft.Win32;
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -20,7 +21,7 @@ namespace ItemEditor
     {
         public int ID { get; set; }
         private string? _name { get; set; }
-        public string? VarName { get => RequiredB ? (_name ?? "") + " *" : _name; set => _name = value ?? ""; }
+        public string? VarName { get => RequiredB != null ? (_name ?? "") + " *" : _name; set => _name = value ?? ""; }
         public object? VarValue { get; set; }
         public object? VarRealValue { get; set; }
         public object? VarRealName { get; set; }
@@ -36,8 +37,8 @@ namespace ItemEditor
         public string? Required { get; set; }
         public RegularExpressionAttribute? RequiredRegex { get; set; }
         public string RequiredErrorDescriptor { get; set; }
-        private bool _required { get; set; }
-        public bool RequiredB
+        private RequiredAttribute? _required { get; set; }
+        public RequiredAttribute? RequiredB
         {
             get => _required;
             set
@@ -56,7 +57,7 @@ namespace ItemEditor
         public VarMapper()
         {
             LastB = false;
-            RequiredB = false;
+            RequiredB = null;
             Reference = 0;
             RemoveButton = string.Empty;
             selectionIndexes = [];
@@ -137,7 +138,105 @@ namespace ItemEditor
                 }
             }
             BindItemsControl();
+
+
+
+
+            /*
+             ------------------------------------------------------------------------------------
+             ------------------------------------------------------------------------------------
+             --------------------------------- START THEME-ING --------------------------------
+             ------------------------------------------------------------------------------------
+             ------------------------------------------------------------------------------------
+             */
+
+
+
+            // Listen for system theme changes
+            SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
+            Application.Current.Exit += OnExit;
+            ApplyTheme(IsSystemDarkTheme());
         }
+
+        private void OnExit(object sender, ExitEventArgs e)
+        {
+            SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
+        }
+
+        private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
+        {
+            // Check if the theme preference changed
+            if (e.Category == UserPreferenceCategory.General)
+            {
+                Dispatcher.BeginInvoke(() =>
+                {
+                    ApplyTheme(IsSystemDarkTheme());
+                });
+            }
+        }
+
+        private static bool IsSystemDarkTheme()
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+                var value = key?.GetValue("AppsUseLightTheme");
+                return value is int intValue && intValue == 0;
+            }
+            catch
+            {
+                return false; // Default to light theme if unable to determine
+            }
+        }
+
+        private void ApplyTheme(bool isDarkTheme)
+        {
+            var themeDict = Resources.MergedDictionaries.FirstOrDefault(d =>
+                d.Source?.ToString().Contains("Theme") == true);
+
+            if (themeDict != null)
+            {
+                Resources.MergedDictionaries.Remove(themeDict);
+            }
+
+            var targetTheme = isDarkTheme ? "DarkTheme" : "LightTheme";
+            var themeResources = (ResourceDictionary)Resources[targetTheme];
+
+            // Apply theme colors to main resource dictionary
+            foreach (var key in themeResources.Keys)
+            {
+                Resources[key] = themeResources[key];
+            }
+        }
+
+        // Optional: Method to manually switch themes (for testing or user preference)
+        public void SwitchTheme(bool toDarkTheme)
+        {
+            ApplyTheme(toDarkTheme);
+        }
+
+        /*
+         ------------------------------------------------------------------------------------
+         ------------------------------------------------------------------------------------
+         --------------------------------- END  OF THEME-ING --------------------------------
+         ------------------------------------------------------------------------------------
+         ------------------------------------------------------------------------------------
+         */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         private void PopulateMappersICollection()
         {
@@ -247,7 +346,7 @@ namespace ItemEditor
                         case EditableAttribute att: varMapper.Editable = att.AllowEdit; break;
                         case BrowsableAttribute: varMapper.VarType = "FolderSelection"; break;
                         case FileExtensionsAttribute: varMapper.VarType = "FileSelection"; break;
-                        case RequiredAttribute att: varMapper.RequiredB = true; break;
+                        case RequiredAttribute att: varMapper.RequiredB = att; break;
                         case RegularExpressionAttribute att: varMapper.RequiredRegex = att; break;
                         case ObfuscationAttribute obf: varMapper.Secret = true; break;
                         case CustomImporterAttribute att:
@@ -419,14 +518,24 @@ namespace ItemEditor
                     if (mapper.VarValue == null || (mapper.VarValue is string && string.IsNullOrEmpty(mapper.VarValue as string)) || (mapper.VarValue is not string && mapper.VarValue is not int && mapper.VarValue == Activator.CreateInstance(mapper.VarValue?.GetType() ?? typeof(string))))
                     {
                         invalidPerIter++;
-                        if ((mapper.RequiredB == true && (string)(mapper.VarType ?? "") != "Button") || (mapper.RequiredB && property?.GetValue(firstElm) == null))
+                        if ((mapper.RequiredB != null && (string)(mapper.VarType ?? "") != "Button") || (mapper.RequiredB != null && property?.GetValue(firstElm) == null))
                         {
+                            mapper.RequiredErrorDescriptor = mapper.RequiredB.ErrorMessage ?? "Obligatoire";
                             mapper.Required = "#FFE41212";
                             validIteration = false;
                         }
                         continue;
 
                     }
+
+                    if (mapper.RequiredRegex != null && !mapper.RequiredRegex.IsValid(mapper.VarValue))
+                    {
+                        mapper.RequiredErrorDescriptor = mapper.RequiredRegex.ErrorMessage ?? "problème Format : " + mapper.RequiredRegex.Pattern;
+                        mapper.Required = "#FFE41212";
+                        validIteration = false;
+                        continue;
+                    }
+
                     if (property != null)
                     {
                         string namespaceStr = property.PropertyType.Namespace ?? "System";
@@ -545,8 +654,9 @@ namespace ItemEditor
                     PropertyInfo? property = firstElm?.GetType().GetProperty(mapper.VarRealName?.ToString() ?? "");
                     if (mapper.VarValue == null || (mapper.VarValue is string && string.IsNullOrEmpty(mapper.VarValue as string)) || (mapper.VarValue is not string && mapper.VarValue is not int && mapper.VarValue == Activator.CreateInstance(mapper.VarValue?.GetType() ?? typeof(string))))
                     {
-                        if ((mapper.RequiredB == true && (string)(mapper.VarType ?? "") != "Button") || (mapper.RequiredB && property?.GetValue(firstElm) == null))
+                        if ((mapper.RequiredB != null && (string)(mapper.VarType ?? "") != "Button") || (mapper.RequiredB != null&& property?.GetValue(firstElm) == null))
                         {
+                            mapper.RequiredErrorDescriptor = mapper.RequiredB.ErrorMessage ?? "Obligatoire";
                             mapper.Required = "#FFE41212";
                             validIteration = false;
                             continue;
@@ -555,8 +665,8 @@ namespace ItemEditor
 
                     if (mapper.RequiredRegex != null && !mapper.RequiredRegex.IsValid(mapper.VarValue))
                     {
-                            mapper.RequiredErrorDescriptor = mapper.RequiredRegex.ErrorMessage ?? "";
-                            mapper.Required = "#FFE41212";
+                            mapper.RequiredErrorDescriptor = mapper.RequiredRegex.ErrorMessage ?? "problème Format : " + mapper.RequiredRegex.Pattern;
+                        mapper.Required = "#FFE41212";
                             validIteration = false;
                             continue;
                     }

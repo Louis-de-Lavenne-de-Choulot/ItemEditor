@@ -11,112 +11,282 @@
     >
 
     <Page.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary x:Key="LightTheme">
+                <SolidColorBrush x:Key="ItemEditorTextPrimaryColor" Color="#0F172A"/>
+                <SolidColorBrush x:Key="ItemEditorBackgroundColor" Color="#FAFAFA"/>
+                <SolidColorBrush x:Key="ItemEditorCardBackgroundColor" Color="#F8FAFC"/>
+                <SolidColorBrush x:Key="ItemEditorInnerCardBackgroundColor" Color="#F9F9F9"/>
+                <SolidColorBrush x:Key="ItemEditorBorderColor" Color="#CCCCCC"/>
+                <SolidColorBrush x:Key="ItemEditorInnerBorderColor" Color="#DDDDDD"/>
+                <SolidColorBrush x:Key="ItemEditorTextBoxBackgroundColor" Color="#F8FAFC"/>
+                <SolidColorBrush x:Key="ItemEditorTextBoxBorderColor" Color="#C4C4C4"/>
+                <SolidColorBrush x:Key="ItemEditorButtonBackgroundColor" Color="#DDDDDD"/>
+                <SolidColorBrush x:Key="ItemEditorCloseButtonColor" Color="#E57373"/>
+                <SolidColorBrush x:Key="ItemEditorSaveButtonColor" Color="#66BB6A"/>
+                <SolidColorBrush x:Key="ItemEditorRemoveButtonColor" Color="#E57373"/>
+                <SolidColorBrush x:Key="ItemEditorAddButtonColor" Color="#66BB6A"/>
+                <SolidColorBrush x:Key="ItemEditorTitleColor" Color="#333333"/>
+            </ResourceDictionary>
 
-        <!-- Style definitions (unchanged bindings, improved appearance) -->
+            <ResourceDictionary x:Key="DarkTheme">
+                <!-- Improved dark theme with better contrast and readability -->
+                <SolidColorBrush x:Key="ItemEditorTextPrimaryColor" Color="#F8FAFC"/>
+                <SolidColorBrush x:Key="ItemEditorBackgroundColor" Color="#0F172A"/>
+                <SolidColorBrush x:Key="ItemEditorCardBackgroundColor" Color="#1E293B"/>
+                <SolidColorBrush x:Key="ItemEditorInnerCardBackgroundColor" Color="#334155"/>
+                <SolidColorBrush x:Key="ItemEditorBorderColor" Color="#475569"/>
+                <SolidColorBrush x:Key="ItemEditorInnerBorderColor" Color="#64748B"/>
+                <SolidColorBrush x:Key="ItemEditorTextBoxBackgroundColor" Color="#0F172A"/>
+                <SolidColorBrush x:Key="ItemEditorTextBoxBorderColor" Color="#64748B"/>
+                <SolidColorBrush x:Key="ItemEditorButtonBackgroundColor" Color="#475569"/>
+                <SolidColorBrush x:Key="ItemEditorCloseButtonColor" Color="#EF4444"/>
+                <SolidColorBrush x:Key="ItemEditorSaveButtonColor" Color="#10B981"/>
+                <SolidColorBrush x:Key="ItemEditorRemoveButtonColor" Color="#EF4444"/>
+                <SolidColorBrush x:Key="ItemEditorAddButtonColor" Color="#10B981"/>
+                <SolidColorBrush x:Key="ItemEditorTitleColor" Color="#F1F5F9"/>
+            </ResourceDictionary>
 
-        <Style x:Key="NewSelectionElm" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-            <Setter Property="Visibility" Value="Collapsed"/>
-            <Setter Property="Margin" Value="0,5"/>
-            <Style.Triggers>
-                <MultiDataTrigger>
-                    <MultiDataTrigger.Conditions>
-                        <Condition Binding="{Binding Path=SelectedIndex, ElementName=ChoiceBox}" Value="0"/>
-                        <Condition Binding="{Binding Path=Visibility, ElementName=ChoiceBox}" Value="Visible"/>
-                        <Condition Binding="{Binding Path=Tag, RelativeSource={RelativeSource Self}}" Value="True"/>
-                    </MultiDataTrigger.Conditions>
-                    <Setter Property="Visibility" Value="Visible"/>
-                </MultiDataTrigger>
-            </Style.Triggers>
-        </Style>
+            <!-- Default to light theme colors -->
+            <SolidColorBrush x:Key="ItemEditorTextPrimaryColor" Color="#0F172A"/>
+            <SolidColorBrush x:Key="ItemEditorBackgroundColor" Color="#FAFAFA"/>
+            <SolidColorBrush x:Key="ItemEditorCardBackgroundColor" Color="#F8FAFC"/>
+            <SolidColorBrush x:Key="ItemEditorInnerCardBackgroundColor" Color="#F9F9F9"/>
+            <SolidColorBrush x:Key="ItemEditorBorderColor" Color="#CCCCCC"/>
+            <SolidColorBrush x:Key="ItemEditorInnerBorderColor" Color="#DDDDDD"/>
+            <SolidColorBrush x:Key="ItemEditorTextBoxBackgroundColor" Color="#F8FAFC"/>
+            <SolidColorBrush x:Key="ItemEditorTextBoxBorderColor" Color="#C4C4C4"/>
+            <SolidColorBrush x:Key="ItemEditorButtonBackgroundColor" Color="#DDDDDD"/>
+            <SolidColorBrush x:Key="ItemEditorCloseButtonColor" Color="#E57373"/>
+            <SolidColorBrush x:Key="ItemEditorSaveButtonColor" Color="#66BB6A"/>
+            <SolidColorBrush x:Key="ItemEditorRemoveButtonColor" Color="#E57373"/>
+            <SolidColorBrush x:Key="ItemEditorAddButtonColor" Color="#66BB6A"/>
+            <SolidColorBrush x:Key="ItemEditorTitleColor" Color="#333333"/>
 
-        <!-- TextBox -->
-        <Style TargetType="TextBox">
-            <Setter Property="Visibility" Value="Collapsed"/>
-            <Setter Property="Margin" Value="0,5"/>
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="Padding" Value="10"/>
-            <Setter Property="BorderBrush" Value="#FFC4C4C4"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Background" Value="#FFF"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="{x:Null}">
-                    <Setter Property="Visibility" Value="Visible"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
+            <Style x:Key="NewSelectionElm" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                <Setter Property="Visibility" Value="Collapsed"/>
+                <Setter Property="Margin" Value="0,5"/>
+                <Style.Triggers>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding Path=SelectedIndex, ElementName=ChoiceBox}" Value="0"/>
+                            <Condition Binding="{Binding Path=Visibility, ElementName=ChoiceBox}" Value="Visible"/>
+                            <Condition Binding="{Binding Path=Tag, RelativeSource={RelativeSource Self}}" Value="True"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Visibility" Value="Visible"/>
+                    </MultiDataTrigger>
+                </Style.Triggers>
+            </Style>
 
-        <!-- CheckBox -->
-        <Style TargetType="CheckBox">
-            <Setter Property="Visibility" Value="Collapsed"/>
-            <Setter Property="Margin" Value="10,5"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="Boolean">
-                    <Setter Property="Visibility" Value="Visible"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
+            <!-- TextBlock -->
+            <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource ItemEditorTextPrimaryColor}"/>
+            </Style>
 
-        <!-- Separator -->
-        <Style TargetType="Separator">
-            <Setter Property="Visibility" Value="Collapsed"/>
-            <Setter Property="Margin" Value="10"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="Y">
-                    <Setter Property="Visibility" Value="Visible"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
+            <!-- TextBox -->
+            <Style TargetType="TextBox">
+                <Setter Property="Visibility" Value="Collapsed"/>
+                <Setter Property="Margin" Value="0,5"/>
+                <Setter Property="FontSize" Value="18"/>
+                <Setter Property="Foreground" Value="{DynamicResource ItemEditorTextPrimaryColor}"/>
+                <Setter Property="Padding" Value="10"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ItemEditorTextBoxBorderColor}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Background" Value="{DynamicResource ItemEditorTextBoxBackgroundColor}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="{x:Null}">
+                        <Setter Property="Visibility" Value="Visible"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
 
-        <!-- StackPanel -->
-        <Style TargetType="StackPanel">
-            <Setter Property="Margin" Value="0,0,0,20"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="Importer">
-                    <Setter Property="Margin" Value="0,0,0,5"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
+            <!-- CheckBox -->
+            <Style TargetType="CheckBox">
+                <Setter Property="Visibility" Value="Collapsed"/>
+                <Setter Property="Margin" Value="10,5"/>
+                <Setter Property="Foreground" Value="{DynamicResource ItemEditorTextPrimaryColor}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="Boolean">
+                        <Setter Property="Visibility" Value="Visible"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
 
-        <!-- Button -->
-        <Style TargetType="Button">
-            <Setter Property="Visibility" Value="Collapsed"/>
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="Padding" Value="10"/>
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="Background" Value="#FFDDDDDD"/>
-            <Setter Property="Foreground" Value="Black"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="Button">
-                    <Setter Property="Visibility" Value="Visible"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Path=CommandParameter,RelativeSource={RelativeSource Self}}" Value="Importer">
-                    <Setter Property="Visibility" Value="Visible"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="FileSelection">
-                    <Setter Property="Visibility" Value="Visible"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="FolderSelection">
-                    <Setter Property="Visibility" Value="Visible"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
+            <!-- Separator -->
+            <Style TargetType="Separator">
+                <Setter Property="Visibility" Value="Collapsed"/>
+                <Setter Property="Margin" Value="10"/>
+                <Setter Property="Background" Value="{DynamicResource ItemEditorBorderColor}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="Y">
+                        <Setter Property="Visibility" Value="Visible"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
 
-        <!-- ComboBox -->
-        <Style TargetType="ComboBox">
-            <Setter Property="Visibility" Value="Collapsed"/>
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="Padding" Value="5"/>
-            <Setter Property="FontSize" Value="16"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="Selection">
-                    <Setter Property="Visibility" Value="Visible"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
+            <!-- StackPanel -->
+            <Style TargetType="StackPanel">
+                <Setter Property="Margin" Value="0,0,0,20"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="Importer">
+                        <Setter Property="Margin" Value="0,0,0,5"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
 
+            <!-- Button -->
+            <Style TargetType="Button">
+                <Setter Property="Visibility" Value="Collapsed"/>
+                <Setter Property="Margin" Value="5"/>
+                <Setter Property="Padding" Value="10"/>
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="Background" Value="{DynamicResource ItemEditorButtonBackgroundColor}"/>
+                <Setter Property="Foreground" Value="{DynamicResource ItemEditorTextPrimaryColor}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="Button">
+                        <Setter Property="Visibility" Value="Visible"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Path=CommandParameter,RelativeSource={RelativeSource Self}}" Value="Importer">
+                        <Setter Property="Visibility" Value="Visible"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="FileSelection">
+                        <Setter Property="Visibility" Value="Visible"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="FolderSelection">
+                        <Setter Property="Visibility" Value="Visible"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- ComboBox -->
+            <Style TargetType="ComboBox">
+                <Setter Property="Visibility" Value="Collapsed"/>
+                <Setter Property="Foreground" Value="{DynamicResource ItemEditorTextPrimaryColor}"/>
+                <Setter Property="Background" Value="{DynamicResource ItemEditorTextBoxBackgroundColor}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ItemEditorTextBoxBorderColor}"/>
+                <Setter Property="Margin" Value="5"/>
+                <Setter Property="Padding" Value="5"/>
+                <Setter Property="FontSize" Value="16"/>
+                <!-- template to control dropdown appearance -->
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBox">
+                            <Grid>
+                                <ToggleButton Name="ToggleButton" 
+                                  Background="{TemplateBinding Background}"
+                                  BorderBrush="{TemplateBinding BorderBrush}"
+                                  BorderThickness="{TemplateBinding BorderThickness}"
+                                  Grid.Column="2" 
+                                  Focusable="false"
+                                  IsChecked="{Binding Path=IsDropDownOpen,Mode=TwoWay,RelativeSource={RelativeSource TemplatedParent}}"
+                                  ClickMode="Press">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition />
+                                                    <ColumnDefinition Width="20" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border x:Name="Border" 
+                                            Grid.ColumnSpan="2"
+                                            CornerRadius="3"
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="1" />
+                                                <Path x:Name="Arrow"
+                                          Grid.Column="1"     
+                                          Fill="{DynamicResource ItemEditorTextPrimaryColor}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          Data="M 0 0 L 4 4 L 8 0 Z"/>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                </ToggleButton>
+                                <ContentPresenter Name="ContentSite"
+                                      IsHitTestVisible="False" 
+                                      Content="{TemplateBinding SelectionBoxItem}"
+                                      ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                      ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                      Margin="3,3,23,3"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Left" />
+                                <TextBox x:Name="PART_EditableTextBox"
+                             Style="{x:Null}" 
+                             Template="{DynamicResource ComboBoxTextBox}" 
+                             HorizontalAlignment="Left" 
+                             VerticalAlignment="Center" 
+                             Margin="3,3,23,3"
+                             Focusable="True" 
+                             Background="Transparent"
+                             Foreground="{DynamicResource ItemEditorTextPrimaryColor}"
+                             Visibility="Hidden"
+                             IsReadOnly="{TemplateBinding IsReadOnly}"/>
+                                <Popup Name="Popup"
+                           Placement="Bottom"
+                           IsOpen="{TemplateBinding IsDropDownOpen}"
+                           AllowsTransparency="True" 
+                           Focusable="False"
+                           PopupAnimation="Slide">
+                                    <Grid Name="DropDown"
+                              SnapsToDevicePixels="True"                
+                              MinWidth="{TemplateBinding ActualWidth}"
+                              MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                        <Border x:Name="DropDownBorder"
+                                    Background="{DynamicResource ItemEditorTextBoxBackgroundColor}"
+                                    BorderThickness="1"
+                                    BorderBrush="{DynamicResource ItemEditorTextBoxBorderColor}"
+                                    CornerRadius="3"/>
+                                        <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True">
+                                            <StackPanel IsItemsHost="True" 
+                                           KeyboardNavigation.DirectionalNavigation="Contained" />
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Popup>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Path=Tag,RelativeSource={RelativeSource Self}}" Value="Selection">
+                        <Setter Property="Visibility" Value="Visible"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- ComboBoxItem style for dropdown items -->
+            <Style TargetType="ComboBoxItem">
+                <Setter Property="Background" Value="{DynamicResource ItemEditorTextBoxBackgroundColor}"/>
+                <Setter Property="Foreground" Value="{DynamicResource ItemEditorTextPrimaryColor}"/>
+                <Setter Property="Padding" Value="8,4"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBoxItem">
+                            <Border Name="Border"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        Padding="{TemplateBinding Padding}">
+                                <ContentPresenter Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsHighlighted" Value="True">
+                                    <Setter TargetName="Border" Property="Background" Value="{DynamicResource ItemEditorButtonBackgroundColor}"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Border" Property="Background" Value="{DynamicResource ItemEditorButtonBackgroundColor}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
     </Page.Resources>
 
-    <Grid Background="#FAFAFA">
+    <Grid Background="{DynamicResource ItemEditorBackgroundColor}">
         <Grid.RowDefinitions>
             <RowDefinition Height="90"/>
             <RowDefinition/>
@@ -125,12 +295,12 @@
         <!-- Header Buttons -->
         <Grid Margin="20" VerticalAlignment="Top">
             <Button Content="X" Click="CloseButton_Click" Visibility="Visible" FontSize="20"
-                    HorizontalAlignment="Left" Background="#FFE57373" Padding="8,4"
+                    HorizontalAlignment="Left" Background="{DynamicResource ItemEditorCloseButtonColor}" Padding="8,4"
                     Foreground="White" FontWeight="Bold" Width="90" BorderThickness="0"/>
 
             <Button x:Name="SaveButton" Content="Sauvegarder" Click="SaveButton_Click"
                     Visibility="Visible" FontSize="20" HorizontalAlignment="Right"
-                    Background="#FF66BB6A" Foreground="White" Padding="8,4"
+                    Background="{DynamicResource ItemEditorSaveButtonColor}" Foreground="White" Padding="8,4"
                     FontWeight="Bold" Width="160" BorderThickness="0"/>
         </Grid>
 
@@ -144,19 +314,21 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Row="0">
                 <StackPanel x:Name="ControlsPanel" Margin="0,10">
                     <TextBlock x:Name="PageTitle" FontSize="32" HorizontalAlignment="Center"
-                               FontWeight="Bold" Margin="0,0,0,30" Foreground="#333"/>
+                               FontWeight="Bold" Margin="0,0,0,30" Foreground="{DynamicResource ItemEditorTitleColor}"/>
 
                     <!-- GLOBAL square (border around all items) -->
-                    <Border Background="White" CornerRadius="16" BorderBrush="#CCC" BorderThickness="1" Padding="20">
+                    <Border Background="{DynamicResource ItemEditorCardBackgroundColor}" CornerRadius="16" 
+                            BorderBrush="{DynamicResource ItemEditorBorderColor}" BorderThickness="1" Padding="20">
                         <ItemsControl x:Name="ClientControl">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <!-- INNER square merged: one border wrapping everything inside the item -->
-                                    <Border Margin="10" Padding="15" Background="#F9F9F9" CornerRadius="12" BorderBrush="#DDD" BorderThickness="1">
+                                    <Border Margin="10" Padding="15" Background="{DynamicResource ItemEditorInnerCardBackgroundColor}" 
+                                            CornerRadius="12" BorderBrush="{DynamicResource ItemEditorInnerBorderColor}" BorderThickness="1">
                                         <WrapPanel Orientation="Horizontal">
                                             <StackPanel Tag="{Binding VarType}" Width="600">
                                                 <TextBlock Text="{Binding RequiredErrorDescriptor}" Foreground="{Binding Required}" FontSize="20" Margin="0,0,0,5"/>
-                                                <TextBlock Text="{Binding VarName}" Tag="{Binding Required}" Foreground="{Binding Required}" FontSize="20" Margin="0,0,0,10"/>
+                                                <TextBlock Text="{Binding VarName}" Tag="{Binding Required}" Foreground="{DynamicResource ItemEditorTextPrimaryColor}" FontSize="20" Margin="0,0,0,10"/>
 
                                                 <TextBox Text="{Binding SecretVal}" Tag="{Binding VarType}" ToolTip="{Binding .}" FontSize="18"
                                                          TextChanged="TextBox_TextChanged" Loaded="TextBox_Loaded" TextWrapping="Wrap"/>
@@ -184,7 +356,7 @@
                                             <Button Content="Retirer cette instance" Tag="{Binding RemoveButton}" Height="50" Width="300"
                                                     CommandParameter="{Binding Reference}" FontSize="18"
                                                     HorizontalAlignment="Center" Padding="10,0"
-                                                    Click="RemoveICollectionEntryButton_Click" Background="#FFE57373"
+                                                    Click="RemoveICollectionEntryButton_Click" Background="{DynamicResource ItemEditorRemoveButtonColor}"
                                                     Foreground="White" BorderThickness="0"/>
                                         </WrapPanel>
                                     </Border>
@@ -197,7 +369,7 @@
 
             <Button x:Name="AddEntry" Content="+" Tag="{Binding VarType}" Grid.Row="1"
                     FontSize="28" HorizontalAlignment="Center" Padding="10"
-                    Click="AddICollectionEntryButton_Click" Background="#FF66BB6A"
+                    Click="AddICollectionEntryButton_Click" Background="{DynamicResource ItemEditorAddButtonColor}"
                     Foreground="White" Width="60" Height="60" BorderThickness="0"
                     Margin="0,20"/>
         </Grid>
