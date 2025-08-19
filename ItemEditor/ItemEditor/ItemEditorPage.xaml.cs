@@ -980,12 +980,26 @@ namespace ItemEditor
             {
                 int valL = vmp.VarValue.ToString()?.Length ?? 0;
                 if (secretVal.Length > valL)
-                    vmp.VarValue += secretVal.Last().ToString();
+                {
+                    if (secretVal.Length == valL + 1)
+                        vmp.VarValue += secretVal.Last().ToString();
+                    else
+                        vmp.VarValue += secretVal[valL..];
+                }
                 else if (secretVal.Length < valL)
-                    vmp.VarValue = vmp.VarValue.ToString()?.Remove(valL - 1);
+                {
+                    if (secretVal.Length == 0)
+                        vmp.VarValue = "";
+                    else if (secretVal.Length == valL - 1)
+                        vmp.VarValue = vmp.VarValue.ToString()?.Remove(valL - 1);
+                    else
+                        vmp.VarValue = vmp.VarValue.ToString()?.Remove(valL - (valL - secretVal.Length));
+                }
 
+                textBox.TextChanged -= TextBox_TextChanged;
                 textBox.Text = new string('*', secretVal.Length);
                 textBox.Select(textBox.Text.Length, 0);
+                textBox.TextChanged += TextBox_TextChanged;
             }
             else
                 vmp.VarValue = secretVal;
