@@ -1077,7 +1077,7 @@ namespace ItemEditor
             }
         }
 
-        private bool ValidationUIUpdate = false;
+        private (bool, int) ValidationUIUpdate = (false, 0);
         private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             TextBox textBox = (TextBox)sender;
@@ -1087,27 +1087,62 @@ namespace ItemEditor
                 vmp.VarValue = "";
             if (vmp.Secret)
             {
-                int valL = vmp.VarValue.ToString()?.Length ?? 0;
-                if (secretVal.Length > valL)
-                {
-                    if (secretVal.Length == valL + 1)
-                        vmp.VarValue += secretVal.Last().ToString();
-                    else
-                        vmp.VarValue += secretVal[valL..];
-                }
-                else if (secretVal.Length < valL)
-                {
-                    if (secretVal.Length == 0)
-                        vmp.VarValue = "";
-                    else if (secretVal.Length == valL - 1)
-                        vmp.VarValue = vmp.VarValue.ToString()?.Remove(valL - 1);
-                    else
-                        vmp.VarValue = vmp.VarValue.ToString()?.Remove(valL - (valL - secretVal.Length));
-                }
+                string realValue = vmp.VarValue.ToString() ?? "";
+                int oldLength = realValue.Length;
+                int newLength = secretVal.Length;
 
                 textBox.TextChanged -= TextBox_TextChanged;
-                textBox.Text = new string('*', secretVal.Length);
-                textBox.Select(textBox.Text.Length, 0);
+
+                // Store caret position before we modify anything
+                int caretIndex = textBox.CaretIndex;
+
+                bool hasAdditions = false;
+                bool hasRemovals = false;
+                int changeStart = -1;
+                int addedCount = 0;
+                int removedCount = 0;
+
+                foreach (TextChange change in e.Changes)
+                {
+                    if (change.AddedLength > 0)
+                    {
+                        hasAdditions = true;
+                        addedCount += change.AddedLength;
+                        if (changeStart == -1) changeStart = change.Offset;
+                    }
+                    if (change.RemovedLength > 0)
+                    {
+                        hasRemovals = true;
+                        removedCount += change.RemovedLength;
+                        if (changeStart == -1) changeStart = change.Offset;
+                    }
+                }
+
+                if (hasRemovals && hasAdditions)
+                {
+                    string addedText = secretVal.Substring(changeStart, addedCount);
+
+                    realValue = realValue.Remove(changeStart, removedCount);
+                    realValue = realValue.Insert(changeStart, addedText);
+                }
+                else if (hasAdditions)
+                {
+                    string addedText = secretVal.Substring(changeStart, addedCount);
+                    realValue = realValue.Insert(changeStart, addedText);
+                }
+                else if (hasRemovals)
+                {
+                    realValue = realValue.Remove(changeStart, removedCount);
+                }
+
+                vmp.VarValue = realValue;
+
+                // Update the display with asterisks
+                textBox.Text = new string('*', realValue.Length);
+
+                // Restore caret position
+                textBox.CaretIndex = Math.Min(caretIndex, textBox.Text.Length);
+
                 textBox.TextChanged += TextBox_TextChanged;
             }
             else
@@ -1118,31 +1153,27 @@ namespace ItemEditor
                 {
                     vmp.RequiredErrorDescriptor = vmp.RequiredRegex.ErrorMessage ?? "";
                     vmp.Required = "#FFE41212";
-                    firstElmMapper.Remove(vmp);
-                    vmp.SecretVal = secretVal;
-                    ValidationUIUpdate = true;
-                    firstElmMapper.Insert(vmp.ID, vmp);
                 }
                 else
                 {
                     vmp.RequiredErrorDescriptor = "";
                     vmp.Required = Colors.Green.ToString();
-                    firstElmMapper.Remove(vmp);
-                    vmp.SecretVal = secretVal;
-                    ValidationUIUpdate = true;
-                    firstElmMapper.Insert(vmp.ID, vmp);
                 }
+                firstElmMapper.Remove(vmp);
+                vmp.SecretVal = secretVal;
+                ValidationUIUpdate = (true, textBox.CaretIndex);
+                firstElmMapper.Insert(vmp.ID, vmp);
             }
         }
 
         private void TextBox_Loaded(object sender, RoutedEventArgs e)
         {
-            if (!ValidationUIUpdate)
+            if (!ValidationUIUpdate.Item1)
                 return;
             TextBox uiElement = (TextBox)sender;
-            uiElement.Select(uiElement.Text.Length, 0);
+            uiElement.CaretIndex = ValidationUIUpdate.Item2;
             uiElement.Focus();
-            ValidationUIUpdate = false;
+            ValidationUIUpdate = (false, 0);
         }
 
         private void Page_KeyDown(object sender, KeyEventArgs e)
