@@ -23,6 +23,21 @@ namespace ItemEditor
         private string? _name { get; set; }
         public string? VarName { get => RequiredB != null ? (_name ?? "") + " *" : _name; set => _name = value ?? ""; }
         public object? VarValue { get; set; }
+        public string? RegexVarValue { get {
+                var culture = CultureInfo.InvariantCulture;
+                return VarValue switch
+                {
+                    decimal d => d.ToString(culture),
+                    double d => d.ToString(culture),
+                    float f => f.ToString(culture),
+                    int i => i.ToString(culture),
+                    long l => l.ToString(culture),
+                    short s => s.ToString(culture),
+                    byte b => b.ToString(culture),
+                    null => null,
+                    _ => VarValue.ToString()
+                };
+            } }
         public object? VarRealValue { get; set; }
         public object? VarRealName { get; set; }
         public object? VarType { get; set; }
@@ -302,7 +317,6 @@ namespace ItemEditor
             addToMapperLoop(obj, index, clientProperties);
         }   
 
-
         private void addToMapperLoop(object? obj, int index, dynamic props)
         {
             bool propsIsMember = props.GetType() == typeof(MemberInfo[]);
@@ -456,7 +470,7 @@ namespace ItemEditor
                     {
                         varMapper.EditFunc = FileSelectButton_Click;
                     }
-                    else if (!namespaceStr.StartsWith("System") || (prop.PropertyType.IsGenericType && (tp == typeof(ICollection<>) || tp == typeof(IList<>) || tp == typeof(List<>))))
+                    else if (!namespaceStr.StartsWith("System") || (prop.PropertyType.IsGenericType && (tp == typeof(ICollection<>) || tp == typeof(IList<>) || tp == typeof(List<>) || tp == typeof(IDictionary<,>) || tp == typeof(Dictionary<,>))))
                     {
                         varMapper.VarType = "Button";
                         varMapper.EditFunc = AddICollectionButton_Click;
@@ -485,7 +499,7 @@ namespace ItemEditor
         {
             bool validIteration = true;
             Type tp = firstElm.GetType().IsGenericType ? firstElm.GetType().GetGenericTypeDefinition() : typeof(string);
-            if (firstElm.GetType().IsGenericType && (tp == typeof(ICollection) || tp == typeof(IList) || tp == typeof(List<>)))
+            if (firstElm.GetType().IsGenericType && (tp == typeof(ICollection) || tp == typeof(IList) || tp == typeof(List<>) || tp == typeof(IDictionary<,>) || tp == typeof(Dictionary<,>)))
             {
                 IList ICollectionObjs = (IList)firstElm;
                 int count = 0;
@@ -527,7 +541,7 @@ namespace ItemEditor
 
                     }
 
-                    if (mapper.RequiredRegex != null && !mapper.RequiredRegex.IsValid(mapper.VarValue))
+                    if (mapper.RequiredRegex != null && !mapper.RequiredRegex.IsValid(mapper.RegexVarValue))
                     {
                         mapper.RequiredErrorDescriptor = mapper.RequiredRegex.ErrorMessage ?? "problème Format : " + mapper.RequiredRegex.Pattern;
                         mapper.Required = "#FFE41212";
@@ -539,7 +553,7 @@ namespace ItemEditor
                     {
                         string namespaceStr = property.PropertyType.Namespace ?? "System";
                         tp = property.PropertyType.IsGenericType ? property.PropertyType.GetGenericTypeDefinition() : typeof(string);
-                        if (!namespaceStr.StartsWith("System") || (property.PropertyType.IsGenericType && (tp == typeof(ICollection<>) || tp == typeof(ICollection<>))))
+                        if (!namespaceStr.StartsWith("System") || (property.PropertyType.IsGenericType && (tp == typeof(ICollection<>))))
                         {
                             if (mapper.VarType?.ToString() == "Selection")
                             {
@@ -662,9 +676,9 @@ namespace ItemEditor
                         }
                     }
 
-                    if (mapper.RequiredRegex != null && !mapper.RequiredRegex.IsValid(mapper.VarValue))
+                    if (mapper.RequiredRegex != null && !mapper.RequiredRegex.IsValid(mapper.RegexVarValue))
                     {
-                            mapper.RequiredErrorDescriptor = mapper.RequiredRegex.ErrorMessage ?? "problème Format : " + mapper.RequiredRegex.Pattern;
+                        mapper.RequiredErrorDescriptor = mapper.RequiredRegex.ErrorMessage ?? "problème Format : " + mapper.RequiredRegex.Pattern;
                         mapper.Required = "#FFE41212";
                             validIteration = false;
                             continue;
@@ -1149,7 +1163,7 @@ namespace ItemEditor
                 vmp.VarValue = secretVal;
             if(vmp.RequiredRegex != null)
             {
-                if (!vmp.RequiredRegex.IsValid(vmp.VarValue))
+                if (!vmp.RequiredRegex.IsValid(vmp.RegexVarValue))
                 {
                     vmp.RequiredErrorDescriptor = vmp.RequiredRegex.ErrorMessage ?? "";
                     vmp.Required = "#FFE41212";
