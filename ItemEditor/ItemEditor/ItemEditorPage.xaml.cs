@@ -433,28 +433,81 @@ namespace ItemEditor
                         bool selectedF = bindingFunctions.TryGetValue(varMapper.VarRealName + "_selected_selector_value", out Func<object, object?>? selectedFunc);
                         KeyValuePair<object, object> kvp = new(values, varMapper.VarValue);
                         long indx = selectedF ? (long?)selectedFunc?.Invoke(kvp) ?? 0 : values.IndexOf(varMapper.VarValue?.ToString() ?? "");
-                        if (indx == -1 && varMapper.VarValue != null && varMapper.VarValue.GetType() == typeof(string) && varMapper.VarValue.ToString() != "")
+
+                        Type? innerType = keys.Count> 1 ? keys[1]?.GetType() ?? null : null;
+                        if (indx == -1 && varMapper.VarValue != null && innerType != null)
                         {
-                            indx = keys.Count;
-                            keys.Add(keys.Count);
-                            values.Add(varMapper.VarValue.ToString() ?? "");
-                        }
-                        else if (indx == -1 && varMapper.VarValue != null && (!varMapper.VarValue.GetType().Namespace?.StartsWith("System") ?? false))
-                        {
-                            indx = (long?)varMapper.VarValue.GetType().GetProperties().FirstOrDefault(x => x.GetCustomAttribute(typeof(KeyAttribute), false) != null)?.GetValue(varMapper.VarValue) ?? -1;
-                            object? val = null;
-                            try
-                            {
-                                val = keys[(Index)indx];
-                            }
-                            catch { }
-                            if (val == null)
+                            if (varMapper.VarValue.GetType() == innerType)
                             {
                                 keys.Add(varMapper.VarValue);
-                                values.Add((string?)varMapper.VarValue.GetType().GetProperties().FirstOrDefault(x => x.PropertyType == typeof(string))?.GetValue(varMapper.VarValue) ?? "");
+                                values.Add(varMapper.VarValue.ToString() ?? "");
+                            }
+                            else if ((innerType == typeof(int) || innerType == typeof(double) || innerType == typeof(long)) && varMapper.VarValue.GetType() == typeof(string) && varMapper.VarValue != "")
+                            {
+                                indx = keys.Count;
+                                keys.Add(keys.Count);
+                                values.Add(varMapper.VarValue.ToString() ?? "");
+                            }
+                            else if (!varMapper.VarValue.GetType().Namespace?.StartsWith("System") ?? false)
+                            {
+                                indx = (long?)varMapper.VarValue.GetType().GetProperties().FirstOrDefault(x => x.GetCustomAttribute(typeof(KeyAttribute), false) != null)?.GetValue(varMapper.VarValue) ?? -1;
+                                object? val = null;
+                                try
+                                {
+                                    val = keys[(Index)indx];
+                                }
+                                catch { }
+                                if (val == null)
+                                {
+                                    keys.Add(varMapper.VarValue);
+                                    values.Add((string?)varMapper.VarValue.GetType().GetProperties().FirstOrDefault(x => x.PropertyType == typeof(string))?.GetValue(varMapper.VarValue) ?? "");
+                                }
+                            } else
+                            {
+                                PropertyInfo[] k = props;
+                                var existing = k.FirstOrDefault(p => p.GetCustomAttribute(typeof(KeyAttribute), false) != null);
+                                if (existing is not null)
+                                {
+                                    try
+                                    {
+                                        object? instance = instance = Activator.CreateInstance(innerType);
+                                        PropertyInfo[] selectedProps = innerType.GetProperties() ?? [];
+                                        bool foundIDProp = false;
+                                        bool foundDescProp = false;
+                                        foreach (dynamic selectedProp in selectedProps)
+                                        {
+                                            object[] selectedAttrs = selectedProp.GetCustomAttributes(true);
+                                            foreach (object attr in selectedAttrs)
+                                            {
+                                                switch (attr)
+                                                {
+                                                    case KeyAttribute:
+                                                        selectedProp.SetValue(instance, Convert.ChangeType(existing.GetValue(obj), selectedProp.PropertyType, culture));
+                                                        foundIDProp = true;
+                                                        break;
+                                                    case CustomDescriptionAttribute att:
+                                                        if (selectedProp.PropertyType == typeof(string))
+                                                        {
+                                                            selectedProp.SetValue(instance, varMapper.VarValue.ToString());
+                                                            foundDescProp = true;
+                                                        }
+                                                        break;
+                                                    default:
+                                                        break;
+                                                }
+                                            }
+                                        }
+                                        if (instance is not null && foundIDProp && foundDescProp)
+                                        {
+                                            indx = keys.Count;
+                                            keys.Add(instance);
+                                            values.Add(varMapper.VarValue.ToString() ?? "");
+                                        }
+                                    }
+                                    catch { }
+                                }
                             }
                         }
-
                         varMapper.VarValue = indx == -1 ? selectionDefault.ToString() : indx.ToString();
                         varMapper.SecretVal = indx == -1 ? selectionDefault.ToString() : indx.ToString();
 
@@ -538,7 +591,6 @@ namespace ItemEditor
                             validIteration = false;
                         }
                         continue;
-
                     }
 
                     if (mapper.RequiredRegex != null && !mapper.RequiredRegex.IsValid(mapper.RegexVarValue))
