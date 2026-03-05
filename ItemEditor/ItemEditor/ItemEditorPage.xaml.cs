@@ -13,6 +13,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shell;
 using System.Xml.Linq;
 
 namespace ItemEditor
@@ -404,7 +405,11 @@ namespace ItemEditor
                         {
                             dic = [];
                             resultObj = fetchFunc.Invoke(firstElm) ?? new List<string>();
-                            IList tempList = (IList)resultObj;
+                            IList tempList;
+                            if (resultObj is Task task)
+                                tempList = (IList)GetAsyncResult(task).Result;
+                            else
+                                tempList = (IList)resultObj;
 
                             for (int i = 0; i < tempList.Count; i++)
                             {
@@ -432,7 +437,19 @@ namespace ItemEditor
 
                         bool selectedF = bindingFunctions.TryGetValue(varMapper.VarRealName + "_selected_selector_value", out Func<object, object?>? selectedFunc);
                         KeyValuePair<object, object> kvp = new(values, varMapper.VarValue);
-                        long indx = selectedF ? (long?)selectedFunc?.Invoke(kvp) ?? 0 : values.IndexOf(varMapper.VarValue?.ToString() ?? "");
+
+                        long indx = 0;
+                        if (selectedF)
+                        {
+                            var funcResult = selectedFunc?.Invoke(kvp);
+
+                            if (funcResult is Task task2)
+                                indx = (long?)GetAsyncResult(task2).Result??0;
+                            else
+                                indx = (long?)funcResult??0;
+                        }
+                        else
+                            indx = values.IndexOf(varMapper.VarValue?.ToString() ?? "");
 
                         Type? innerType = keys.Count> 1 ? keys[1]?.GetType() ?? null : null;
                         if (indx == -1 && varMapper.VarValue != null && innerType != null)
@@ -536,6 +553,14 @@ namespace ItemEditor
             {
                 firstElmMapper[^1].LastB = true;
             }
+        }
+
+        private static async Task<object> GetAsyncResult(Task task)
+        {
+            await task;
+
+            var type = task.GetType();
+            return type.GetProperty("Result")?.GetValue(task) ?? new List<string>();
         }
 
         private void BindItemsControl()
@@ -748,7 +773,14 @@ namespace ItemEditor
                                 bool isAnInt = int.TryParse(mapper.VarValue?.ToString() ?? "", out int resultingInt);
 
                                 if (bindingFunctions.TryGetValue(mapper.VarRealName + "_value_cast", out var func))
-                                    obj1 = func.Invoke(mapper.VarValue ?? "");
+                                {
+                                     var res = func.Invoke(mapper.VarValue ?? "");
+
+                                    if (res is Task task)
+                                        obj1 = GetAsyncResult(task).Result;
+                                    else
+                                        obj1 = res;
+                                }
                                 else if (mapper.VarValue is string && obj1?.GetType() == typeof(string) && !isAnInt)
                                 {
                                     obj1 = mapper.VarValue;
@@ -802,7 +834,13 @@ namespace ItemEditor
                         {
                             bool isAnInt = int.TryParse(mapper.VarValue?.ToString() ?? "", out int resultingInt);
                             if (bindingFunctions.TryGetValue(mapper.VarRealName + "_value_cast", out var func))
-                                property.SetValue(firstElm, func.Invoke(mapper.VarValue ?? ""));
+                            {
+                                var res = func.Invoke(mapper.VarValue ?? "");
+                                if (res is Task task)
+                                    property.SetValue(firstElm, GetAsyncResult(task).Result);
+                                else
+                                    property.SetValue(firstElm, res);
+                            }
                             else if (mapper.VarValue is string && !isAnInt)
                             {
                                 property.SetValue(firstElm, mapper.VarValue);
@@ -860,12 +898,17 @@ namespace ItemEditor
 
             if (bindingFunctions.TryGetValue("postProcessingFunction", out Func<object, object?>? postProcessingFunction))
             {
-                firstElm = postProcessingFunction.Invoke(firstElm ?? "") ?? "";
+                var res = postProcessingFunction.Invoke(firstElm ?? "") ?? "";
+                if (res is Task task)
+                    firstElm = GetAsyncResult(task).Result;
+                else
+                    firstElm = res;
             }
-
             if (bindingFunctions.TryGetValue("saveFunction", out Func<object, object?>? saveFunc))
             {
-                _ = saveFunc.Invoke(firstElm ?? "");
+                var res = saveFunc.Invoke(firstElm ?? "");
+                if (res is Task task)
+                    task.Wait();
             }
 
             end?.Invoke();
@@ -888,9 +931,18 @@ namespace ItemEditor
                                                                                                          entry => entry.Value);
                     instanceDic["saveFunction"] = MergeICollectionEntry;
                     object obj = prop.GetValue(firstElm) ?? Activator.CreateInstance(propType) ?? "";
-                    NavigationService.Content = bindingFunctions.TryGetValue(prop.Name + "_interceptor", out Func<object, object?>? func)
-                        ? new ItemEditorPage(func.Invoke(obj) ?? "", instanceDic, prop.Name, null)
-                        : (object)new ItemEditorPage(obj, instanceDic, prop.Name, null);
+
+                    bindingFunctions.TryGetValue(prop.Name + "_interceptor", out Func<object, object?>? func);
+                    if (func == null)
+                    {
+                        NavigationService.Content = (object)new ItemEditorPage(obj, instanceDic, prop.Name, null);
+                        return;
+                    }
+                    var res = func.Invoke(obj) ?? "";
+                    if (res is Task task)
+                        res = GetAsyncResult(task).Result;
+
+                    NavigationService.Content = new ItemEditorPage(res, instanceDic, prop.Name, null);
                 }
             }
         }
@@ -1012,6 +1064,8 @@ namespace ItemEditor
             if (bindingFunctions.TryGetValue(tempPropertyName + "_interceptor_end", out Func<object, object?>? func))
             {
                 object? res = func.Invoke(obj);
+                if (res is Task task)
+                    res = GetAsyncResult(task).Result;
                 if (res != null)
                 {
                     _ = res.GetType();
@@ -1076,6 +1130,9 @@ namespace ItemEditor
             }
 
             object? res = importerFunc.Invoke(reference?.VarValue ?? "");
+
+            if (res is Task task)
+                res = GetAsyncResult(task).Result;
             if (res == null)
             {
 
