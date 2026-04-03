@@ -125,7 +125,13 @@ namespace ItemEditor
             this.firstElm = firstElm;
             this.end = end;
             if (bindingFunctions.TryGetValue("setSaveButtonText", out Func<object, object?>? btnTxtFunc)){
-                string? buttonText = (string?)btnTxtFunc.Invoke("Sauvegarder");
+                var res = btnTxtFunc.Invoke("Sauvegarder");
+                string? buttonText;
+                if (res is Task task)
+                    buttonText = (string?)GetAsyncResult(task).Result;
+                else
+                    buttonText = (string?)res;
+                
                 SaveButton.Content = buttonText ?? "Sauvegarder";
             }
             object[] attrs = firstElm.GetType().GetCustomAttributes(true);
@@ -1129,10 +1135,25 @@ namespace ItemEditor
                 return;
             }
 
-            object? res = importerFunc.Invoke(reference?.VarValue ?? "");
+            object? res = Task.Run(async () =>
+            {
+                object? result = importerFunc.Invoke(reference?.VarValue ?? "");
 
-            if (res is Task task)
-                res = GetAsyncResult(task).Result;
+                if (result is Task task)
+                {
+                    // 2. Await the task properly to get the actual value (e.g., the Product or null)
+                    await task;
+
+                    // 3. Extract the Result property from the completed task
+                    var taskType = task.GetType();
+                    if (taskType.IsGenericType)
+                    {
+                        return taskType.GetProperty("Result")?.GetValue(task);
+                    }
+                }
+                return result;
+            }).GetAwaiter().GetResult();
+
             if (res == null)
             {
 
